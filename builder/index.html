@@ -65,7 +65,7 @@
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
           <button id="copy" class="secondary">复制 YAML</button>
-          <button id="download" class="secondary">下载 config.yaml</button>
+          <button id="download" class="secondary">下载 Primus-Mihomo.yaml</button>
         </div>
       </div>
 
@@ -170,7 +170,7 @@
 
   document.getElementById("generate").addEventListener("click", generateMihomo);
   document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
-  document.getElementById("download").addEventListener("click", () => downloadText(output.value, "config.yaml"));
+  document.getElementById("download").addEventListener("click", () => downloadText(output.value, "Primus-Mihomo.yaml"));
 
   document.getElementById("load-loon").addEventListener("click", () => {
     output.value = loonConfig;
