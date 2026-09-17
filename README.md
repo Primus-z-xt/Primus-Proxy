@@ -1,27 +1,44 @@
 # Primus Proxy
 
-统一维护 Primus 的 Loon 与 Mihomo / Clash 配置。
+统一维护 Loon 与 Mihomo / Clash 配置。
 
-## 目录
+## 配置生成器
 
-- `loon/Primus-Loon.lcf`：Loon 当前生产配置
-- `mihomo/template.yaml`：Mihomo / Clash 配置模板
-- `builder/index.html`：浏览器本地配置生成器
-- `.github/workflows/pages.yml`：GitHub Pages 自动部署
+**入口：**
 
-## 设计原则
+👉 https://primus-z-xt.github.io/Primus-Proxy/
 
-- 节点来源保持独立：自建 / 机场-A / 备用
-- 所有策略均为手动 `select`
-- 不使用 `url-test`、`fallback`、`load-balance` 或自动容灾
-- 普通代理：全球代理策略 → 主力节点 / 备用节点
-- 主力节点：自建 · 全部 / 机场-A · 香港
-- AI：仅使用各真实来源中的美国节点
-- 番茄 / 抖音 / 小红书：DIRECT / 全球代理策略
-- Apple CN / Microsoft CN / LAN / CN → DIRECT
-- 4ktop.com → DIRECT
-- 最终 MATCH → 全球代理策略
+以后如果忘记网页地址，直接打开本仓库首页，在 README 顶部点这个入口即可。
+
+## 使用方法
+
+### Mihomo / Clash
+
+1. 打开上面的“配置生成器”。
+2. 依次粘贴：`自建`、`机场-A`、`备用` 三个订阅链接。
+3. 点击 **生成配置**。
+4. 复制 YAML，或下载 `config.yaml`。
+5. 导入 Clash Verge Rev / FlClash / Mihomo 使用。
+
+订阅链接只在当前浏览器本地参与生成，不上传、不保存。
+
+### Loon
+
+1. 打开“配置生成器”。
+2. 切换到 **Loon**。
+3. 可直接载入、复制或下载当前 `Primus-Loon.lcf`。
+
+当前 Loon 配置文件：
+
+https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf
+
+## 简要说明
+
+- 普通代理：手动选择主力或备用。
+- AI：只使用各来源中的美国节点。
+- 番茄 / 抖音 / 小红书：可手动选择直连或代理。
+- 不使用自动测速、自动切换或自动容灾。
 
 ## 迁移状态
 
-`Primus-Loon` 暂时保留为冗余仓库。待本仓库的 Loon、Mihomo 和 Builder 完成验证后，再切换为唯一生产仓库。
+旧 `Primus-Loon` 仓库暂时保留作为备用。待本仓库完成实际使用验证后，再切换为唯一生产仓库。
