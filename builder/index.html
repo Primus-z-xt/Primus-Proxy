@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Primus Proxy Config</title>
+  <style>
+    :root { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    body { margin: 0; background: #f5f5f7; color: #111; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 18px 50px; }
+    h1 { margin: 0 0 6px; font-size: 30px; }
+    .sub { margin: 0 0 22px; color: #666; }
+    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 18px rgba(0,0,0,.06); margin-bottom: 16px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab, button { border: 0; border-radius: 10px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
+    .tab { background: #e9e9ed; }
+    .tab.active { background: #111; color: #fff; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; }
+    input, textarea { box-sizing: border-box; width: 100%; border: 1px solid #d2d2d7; border-radius: 10px; background: #fff; color: #111; font: inherit; }
+    input { padding: 11px 12px; }
+    textarea { min-height: 460px; padding: 13px; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size: 13px; line-height: 1.5; resize: vertical; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+    button.primary { background: #111; color: #fff; }
+    button.secondary { background: #e9e9ed; color: #111; }
+    .hint { font-size: 13px; color: #777; margin-top: 8px; }
+    .status { min-height: 20px; font-size: 13px; color: #666; }
+    .hidden { display: none; }
+    .show-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
+    .show-row input { width: auto; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111; color: #f5f5f7; }
+      .card { background: #1c1c1e; box-shadow: none; }
+      .sub,.hint,.status { color: #aaa; }
+      input,textarea { background: #2c2c2e; color: #fff; border-color: #444; }
+      .tab,.secondary { background: #2c2c2e !important; color: #fff !important; }
+      .tab.active,.primary { background: #fff !important; color: #111 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Primus Proxy Config</h1>
+    <p class="sub">Loon / Mihomo 配置统一入口</p>
+
+    <section class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="mihomo">Mihomo / Clash</button>
+        <button class="tab" data-tab="loon">Loon</button>
+      </div>
+
+      <div id="mihomo-panel">
+        <label for="self-url">自建订阅</label>
+        <input id="self-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴自建 Clash / Mihomo 订阅链接">
+
+        <label for="airport-url">机场-A</label>
+        <input id="airport-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴机场-A Clash / Mihomo 订阅链接">
+
+        <label for="backup-url">备用</label>
+        <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
+
+        <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
+        <p class="hint">输入内容只在当前浏览器本地参与生成，不上传、不保存。</p>
+
+        <div class="actions">
+          <button id="generate" class="primary">生成配置</button>
+          <button id="copy" class="secondary">复制 YAML</button>
+          <button id="download" class="secondary">下载 config.yaml</button>
+        </div>
+      </div>
+
+      <div id="loon-panel" class="hidden">
+        <p>当前读取仓库中的 Loon 生产配置。节点订阅仍按现有方式在 Loon App 内维护。</p>
+        <div class="actions">
+          <button id="load-loon" class="primary">载入 Loon 配置</button>
+          <button id="copy-loon" class="secondary">复制 Loon</button>
+          <button id="download-loon" class="secondary">下载 Primus-Loon.lcf</button>
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+      <textarea id="output" readonly placeholder="生成后的配置会显示在这里"></textarea>
+    </section>
+  </main>
+
+<script>
+  let mihomoTemplate = "";
+  let loonConfig = "";
+  const output = document.getElementById("output");
+  const status = document.getElementById("status");
+
+  async function loadAssets() {
+    try {
+      const [m, l] = await Promise.all([
+        fetch("./template.yaml", { cache: "no-store" }),
+        fetch("./Primus-Loon.lcf", { cache: "no-store" })
+      ]);
+      if (!m.ok || !l.ok) throw new Error("配置模板载入失败");
+      mihomoTemplate = await m.text();
+      loonConfig = await l.text();
+      status.textContent = "模板已载入";
+    } catch (e) {
+      status.textContent = e.message;
+    }
+  }
+
+  function yamlEscape(value) {
+    return value.trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+
+  function validUrl(value) {
+    try {
+      const u = new URL(value.trim());
+      return u.protocol === "https:" || u.protocol === "http:";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function generateMihomo() {
+    const self = document.getElementById("self-url").value;
+    const airport = document.getElementById("airport-url").value;
+    const backup = document.getElementById("backup-url").value;
+
+    if (!mihomoTemplate) {
+      status.textContent = "模板尚未载入";
+      return;
+    }
+    if (![self, airport, backup].every(validUrl)) {
+      status.textContent = "请完整填写 3 个有效的 http/https 订阅链接";
+      return;
+    }
+
+    output.value = mihomoTemplate
+      .replaceAll("__SELF_URL__", yamlEscape(self))
+      .replaceAll("__AIRPORT_A_URL__", yamlEscape(airport))
+      .replaceAll("__BACKUP_URL__", yamlEscape(backup));
+    status.textContent = "Mihomo / Clash 配置已生成";
+  }
+
+  async function copyText(text, ok) {
+    if (!text) {
+      status.textContent = "当前没有可复制的配置";
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      status.textContent = ok;
+    } catch (_) {
+      output.focus();
+      output.select();
+      document.execCommand("copy");
+      status.textContent = ok;
+    }
+  }
+
+  function downloadText(text, filename) {
+    if (!text) {
+      status.textContent = "当前没有可下载的配置";
+      return;
+    }
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById("generate").addEventListener("click", generateMihomo);
+  document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
+  document.getElementById("download").addEventListener("click", () => downloadText(output.value, "config.yaml"));
+
+  document.getElementById("load-loon").addEventListener("click", () => {
+    output.value = loonConfig;
+    status.textContent = loonConfig ? "Loon 配置已载入" : "Loon 配置尚未载入";
+  });
+  document.getElementById("copy-loon").addEventListener("click", () => copyText(loonConfig, "Loon 配置已复制"));
+  document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, "Primus-Loon.lcf"));
+
+  document.getElementById("show-urls").addEventListener("change", (e) => {
+    ["self-url", "airport-url", "backup-url"].forEach(id => {
+      document.getElementById(id).type = e.target.checked ? "text" : "password";
+    });
+  });
+
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      btn.classList.add("active");
+      const isMihomo = btn.dataset.tab === "mihomo";
+      document.getElementById("mihomo-panel").classList.toggle("hidden", !isMihomo);
+      document.getElementById("loon-panel").classList.toggle("hidden", isMihomo);
+      output.value = "";
+      status.textContent = isMihomo ? "Mihomo / Clash" : "Loon";
+    });
+  });
+
+  loadAssets();
+</script>
+</body>
+</html>
