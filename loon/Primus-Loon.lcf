@@ -1,0 +1,122 @@
+# ============================================================
+# Primus Loon 主备手动版
+# 文件名：Primus-Loon.lcf
+# 版本：v17
+# 更新日期：2026-09-17 16:39:06
+#
+# 基于：iKeLee《Loon 手动配置》模板
+# 原作者：https://t.me/iKeLee
+# 插件来源：https://hub.kelee.one
+#
+# 节点来源：自建 / 机场-A / 备用
+# 日用：香港优先；AI：仅筛选各实际来源中的美国节点
+# 全部使用手动选择，不使用 url-test / fallback
+# 不预留不存在的机场订阅，避免 Loon 将其按 ALL 处理
+# ============================================================
+
+[General]
+ip-mode = v4-only
+ipv6-vif = off
+dns-server = system
+sni-sniffing = true
+disable-stun = true
+dns-reject-mode = LoopbackIP
+domain-reject-mode = DNS
+udp-fallback-mode = REJECT
+wifi-access-http-port = 7222
+wifi-access-socks5-port = 7221
+allow-wifi-access = false
+interface-mode = auto
+test-timeout = 5
+disconnect-on-policy-change = true
+internet-test-url = http://connectivitycheck.platform.hicloud.com/generate_204
+proxy-test-url = http://www.gstatic.com/generate_204
+resource-parser = https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-parser.loon.min.js
+geoip-url = https://geodata.kelee.one/Country-Masaiki.mmdb
+ipasn-url = https://geodata.kelee.one/GeoLite2-ASN-P3TERX.mmdb
+skip-proxy = 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,localhost,*.local,e.crashlytics.com
+bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
+
+[Proxy]
+
+[Remote Proxy]
+# 节点订阅由 Loon App 内手动添加
+# 当前命名：自建 / 机场-A / 备用
+# 仅为实际存在的订阅建立筛选；新增机场后再增加对应 Filter
+
+[Remote Filter]
+# 自建：整体用于日用，同时单独筛选美国节点供 AI 使用
+自建 · 全部 = NameRegex,自建, FilterKey = ".*"
+自建 · 美国 = NameRegex,自建, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
+
+# 机场-A：香港用于日用，美国用于 AI
+机场-A · 香港 = NameRegex,机场-A, FilterKey = "(?i)(🇭🇰|香港|Hong Kong|HKG|HK)"
+机场-A · 美国 = NameRegex,机场-A, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
+
+# 备用：日用保持整订阅，AI 只筛选其中的美国节点
+备用 · 全部 = NameRegex,备用, FilterKey = ".*"
+备用 · 美国 = NameRegex,备用, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
+
+[Proxy Group]
+# 总入口
+全球代理策略 = select,主力节点,备用节点,img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png
+
+# 主力：自建优先，其次香港机场
+主力节点 = select,自建 · 全部,机场-A · 香港,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
+
+# 备用：整个备用订阅
+备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
+
+# AI：仅提供各实际来源中的美国节点，全部手动选择
+AI = select,机场-A · 美国,自建 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
+
+# 国内 App：默认直连，需要时手动切换
+番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png
+抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png
+小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png
+
+[Rule]
+# 固定直连
+DOMAIN-SUFFIX,4ktop.com,DIRECT
+
+# 番茄
+DOMAIN-SUFFIX,fanqienovel.com,番茄
+DOMAIN,novel.snssdk.com,番茄
+DOMAIN,reading.snssdk.com,番茄
+
+# 其他未命中流量
+FINAL,全球代理策略
+
+[Remote Rule]
+# 专项分流
+https://rule.kelee.one/Loon/XiaoHongShu.lsr, policy=小红书, tag=小红书, enabled=true
+https://rule.kelee.one/Loon/DouYin.lsr, policy=抖音, tag=抖音, enabled=true
+https://kelee.one/Tool/Loon/Lsr/AI.lsr, policy=AI, tag=AI, enabled=true
+https://kelee.one/Tool/Loon/Lsr/SpeedtestInternational.lsr, policy=全球代理策略, tag=Speedtest Intl, enabled=true
+
+# Apple / Microsoft 中国区直连
+https://raw.githubusercontent.com/lateautumn2/ruleset_geodata/clash-ruleset/apple-cn.list, policy=DIRECT, tag=Apple CN, enabled=true
+https://raw.githubusercontent.com/lateautumn2/ruleset_geodata/clash-ruleset/microsoft-cn.list, policy=DIRECT, tag=Microsoft CN, enabled=true
+
+# 基础直连规则保持末尾
+https://kelee.one/Tool/Loon/Lsr/LAN_SPLITTER.lsr, policy=DIRECT, tag=LAN, enabled=true
+https://kelee.one/Tool/Loon/Lsr/REGION_SPLITTER.lsr, policy=DIRECT, tag=CN REGION, enabled=true
+
+[Host]
+
+[Rewrite]
+
+[Script]
+
+[Plugin]
+https://kelee.one/Tool/Loon/Lpx/YouTube_remove_ads.lpx, enabled=true
+https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx, pin=true, enabled=true
+https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx, pin=true, enabled=true
+https://kelee.one/Tool/Loon/Lpx/Prevent_DNS_Leaks.lpx, policy=全球代理策略, enabled=true
+https://kelee.one/Tool/Loon/Lpx/Node_detection_tool.lpx, enabled=true
+
+[Mitm]
+hostname =
+ca-p12=
+ca-passphrase=
+skip-server-cert-verify = false
