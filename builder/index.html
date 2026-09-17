@@ -23,11 +23,13 @@
     .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
     button.primary { background: #111; color: #fff; }
     button.secondary { background: #e9e9ed; color: #111; }
-    .hint { font-size: 13px; color: #777; margin-top: 8px; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    .hint { font-size: 13px; color: #777; margin-top: 8px; line-height: 1.55; }
     .status { min-height: 20px; font-size: 13px; color: #666; }
     .hidden { display: none; }
     .show-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
     .show-row input { width: auto; }
+    .subscription-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e5e5ea; }
     @media (prefers-color-scheme: dark) {
       body { background: #111; color: #f5f5f7; }
       .card { background: #1c1c1e; box-shadow: none; }
@@ -35,6 +37,7 @@
       input,textarea { background: #2c2c2e; color: #fff; border-color: #444; }
       .tab,.secondary { background: #2c2c2e !important; color: #fff !important; }
       .tab.active,.primary { background: #fff !important; color: #111 !important; }
+      .subscription-box { border-top-color: #3a3a3c; }
     }
   </style>
 </head>
@@ -60,12 +63,23 @@
         <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
 
         <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
-        <p class="hint">输入内容只在当前浏览器本地参与生成，不上传、不保存。</p>
+        <p class="hint">“生成配置”只在当前浏览器本地处理；“生成订阅链接”会把三个上游地址提交到独立的 Primus 配置后端并保存到 KV，用随机 token 生成私有订阅地址。</p>
 
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
           <button id="copy" class="secondary">复制 YAML</button>
           <button id="download" class="secondary">下载 Primus-Mihomo.yaml</button>
+        </div>
+
+        <div class="subscription-box">
+          <div class="actions">
+            <button id="create-subscription" class="primary">生成订阅链接</button>
+            <button id="copy-subscription" class="secondary" disabled>复制订阅链接</button>
+            <button id="import-clash" class="secondary" disabled>一键导入 Clash Verge Rev</button>
+          </div>
+          <label for="subscription-url">Primus-Mihomo 订阅链接</label>
+          <input id="subscription-url" type="text" readonly placeholder="生成后会显示在这里">
+          <p class="hint">一键导入使用 Clash Verge Rev 官方 URL Scheme；导入后的远程配置名称由后端响应头设置为 Primus-Mihomo.yaml。</p>
         </div>
       </div>
 
@@ -84,10 +98,18 @@
   </main>
 
 <script>
+  const MIHOMO_API = "https://config.primusz.top/api/mihomo";
+
   let mihomoTemplate = "";
   let loonConfig = "";
+  let currentSubscriptionUrl = "";
+
   const output = document.getElementById("output");
   const status = document.getElementById("status");
+  const subscriptionUrlInput = document.getElementById("subscription-url");
+  const createSubscriptionButton = document.getElementById("create-subscription");
+  const copySubscriptionButton = document.getElementById("copy-subscription");
+  const importClashButton = document.getElementById("import-clash");
 
   async function loadAssets() {
     try {
@@ -117,39 +139,104 @@
     }
   }
 
+  function getSourceUrls() {
+    return {
+      self: document.getElementById("self-url").value.trim(),
+      airport: document.getElementById("airport-url").value.trim(),
+      backup: document.getElementById("backup-url").value.trim()
+    };
+  }
+
+  function validateSourceUrls() {
+    const urls = getSourceUrls();
+    if (![urls.self, urls.airport, urls.backup].every(validUrl)) {
+      status.textContent = "请完整填写 3 个有效的 http/https 订阅链接";
+      return null;
+    }
+    return urls;
+  }
+
   function generateMihomo() {
-    const self = document.getElementById("self-url").value;
-    const airport = document.getElementById("airport-url").value;
-    const backup = document.getElementById("backup-url").value;
+    const urls = validateSourceUrls();
+    if (!urls) return;
 
     if (!mihomoTemplate) {
       status.textContent = "模板尚未载入";
       return;
     }
-    if (![self, airport, backup].every(validUrl)) {
-      status.textContent = "请完整填写 3 个有效的 http/https 订阅链接";
-      return;
-    }
 
     output.value = mihomoTemplate
-      .replaceAll("__SELF_URL__", yamlEscape(self))
-      .replaceAll("__AIRPORT_A_URL__", yamlEscape(airport))
-      .replaceAll("__BACKUP_URL__", yamlEscape(backup));
+      .replaceAll("__SELF_URL__", yamlEscape(urls.self))
+      .replaceAll("__AIRPORT_A_URL__", yamlEscape(urls.airport))
+      .replaceAll("__BACKUP_URL__", yamlEscape(urls.backup));
     status.textContent = "Mihomo / Clash 配置已生成";
+  }
+
+  async function createSubscription() {
+    const urls = validateSourceUrls();
+    if (!urls) return;
+
+    createSubscriptionButton.disabled = true;
+    copySubscriptionButton.disabled = true;
+    importClashButton.disabled = true;
+    status.textContent = "正在生成 Primus-Mihomo 订阅链接…";
+
+    try {
+      const response = await fetch(MIHOMO_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          self_url: urls.self,
+          airport_a_url: urls.airport,
+          backup_url: urls.backup
+        })
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (_) {}
+
+      if (!response.ok) {
+        throw new Error(data.error || `后端请求失败 (${response.status})`);
+      }
+
+      if (!validUrl(data.subscription_url || "")) {
+        throw new Error("后端未返回有效订阅链接");
+      }
+
+      currentSubscriptionUrl = data.subscription_url;
+      subscriptionUrlInput.value = currentSubscriptionUrl;
+      copySubscriptionButton.disabled = false;
+      importClashButton.disabled = false;
+      status.textContent = "Primus-Mihomo 订阅链接已生成";
+    } catch (e) {
+      currentSubscriptionUrl = "";
+      subscriptionUrlInput.value = "";
+      status.textContent = `生成订阅链接失败：${e.message}`;
+    } finally {
+      createSubscriptionButton.disabled = false;
+    }
   }
 
   async function copyText(text, ok) {
     if (!text) {
-      status.textContent = "当前没有可复制的配置";
+      status.textContent = "当前没有可复制的内容";
       return;
     }
     try {
       await navigator.clipboard.writeText(text);
       status.textContent = ok;
     } catch (_) {
-      output.focus();
-      output.select();
+      const temp = document.createElement("textarea");
+      temp.value = text;
+      temp.style.position = "fixed";
+      temp.style.opacity = "0";
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
       document.execCommand("copy");
+      temp.remove();
       status.textContent = ok;
     }
   }
@@ -168,9 +255,23 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function importClashVerge() {
+    if (!currentSubscriptionUrl) {
+      status.textContent = "请先生成订阅链接";
+      return;
+    }
+    const scheme = `clash://install-config?url=${encodeURIComponent(currentSubscriptionUrl)}`;
+    status.textContent = "正在唤起 Clash Verge Rev…";
+    window.location.href = scheme;
+  }
+
   document.getElementById("generate").addEventListener("click", generateMihomo);
   document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
   document.getElementById("download").addEventListener("click", () => downloadText(output.value, "Primus-Mihomo.yaml"));
+
+  createSubscriptionButton.addEventListener("click", createSubscription);
+  copySubscriptionButton.addEventListener("click", () => copyText(currentSubscriptionUrl, "订阅链接已复制"));
+  importClashButton.addEventListener("click", importClashVerge);
 
   document.getElementById("load-loon").addEventListener("click", () => {
     output.value = loonConfig;
