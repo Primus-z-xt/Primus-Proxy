@@ -35,7 +35,7 @@ geox-url:
 # 同一真实订阅可按用途建立独立 Provider 筛选；节点名称保持订阅原样
 # -------------------------
 proxy-providers:
-  # 自建：全部节点用于主力；美国节点用于 AI
+  # 自建：全部节点用于日用；美国节点用于 AI
   自建:
     type: http
     url: "__SELF_URL__"
@@ -49,7 +49,7 @@ proxy-providers:
     interval: 600
     filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
 
-  # 机场-A：香港节点用于主力；美国节点用于 AI
+  # 机场-A：香港节点用于日用；美国节点用于 AI
   机场-A · 香港:
     type: http
     url: "__AIRPORT_A_URL__"
@@ -85,6 +85,14 @@ proxy-providers:
 # 远程规则
 # -------------------------
 rule-providers:
+  AI:
+    type: http
+    behavior: classical
+    format: yaml
+    path: ./rule_provider/ai.yaml
+    url: "https://kelee.one/Tool/Clash/Rule/AI.yaml"
+    interval: 86400
+
   DouYin:
     type: http
     behavior: classical
@@ -159,11 +167,11 @@ proxy-groups:
   - name: "🌐 全球代理策略"
     type: select
     proxies:
-      - "🚀 主力节点"
+      - "🚀 日用节点"
       - "🛟 备用节点"
 
   # 顺序：自建全部 → 机场-A 香港
-  - name: "🚀 主力节点"
+  - name: "🚀 日用节点"
     type: select
     use:
       - 自建
@@ -212,18 +220,8 @@ rules:
   # 广告
   - GEOSITE,category-ads-all,REJECT
 
-  # AI
-  - GEOSITE,openai,🤖 AI
-  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI
-  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI
-  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI
-  - DOMAIN-SUFFIX,anthropic.com,🤖 AI
-  - DOMAIN-SUFFIX,claude.ai,🤖 AI
-  - DOMAIN,gemini.google.com,🤖 AI
-  - DOMAIN,aistudio.google.com,🤖 AI
-  - DOMAIN-SUFFIX,x.ai,🤖 AI
-  - DOMAIN-SUFFIX,grok.com,🤖 AI
-  - DOMAIN,copilot.microsoft.com,🤖 AI
+  # AI：使用可莉 AI RuleSet，直接进入美国节点策略
+  - RULE-SET,AI,🤖 AI
 
   # 番茄
   - DOMAIN-SUFFIX,fanqienovel.com,🍅 番茄
