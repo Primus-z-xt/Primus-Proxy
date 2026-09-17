@@ -32,32 +32,54 @@ geox-url:
 
 # -------------------------
 # 节点来源
-# 订阅必须是可直接作为 Mihomo proxy-provider 读取的 Clash/Mihomo 节点订阅
+# 同一真实订阅可按用途建立独立 Provider 筛选；节点名称保持订阅原样
 # -------------------------
 proxy-providers:
+  # 自建：全部节点用于主力；美国节点用于 AI
   自建:
     type: http
     url: "__SELF_URL__"
     path: ./proxy_provider/self.yaml
     interval: 600
-    override:
-      additional-prefix: "自建｜"
 
-  机场-A:
+  自建 · 美国:
+    type: http
+    url: "__SELF_URL__"
+    path: ./proxy_provider/self-us.yaml
+    interval: 600
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+
+  # 机场-A：香港节点用于主力；美国节点用于 AI
+  机场-A · 香港:
     type: http
     url: "__AIRPORT_A_URL__"
-    path: ./proxy_provider/airport-a.yaml
+    path: ./proxy_provider/airport-a-hk.yaml
     interval: 600
-    override:
-      additional-prefix: "机场-A｜"
+    filter: '(?i)(🇭🇰|香港|Hong[ _-]?Kong|(^|[^A-Za-z])(HKG|HK)([^A-Za-z]|$))'
 
+  机场-A · 美国:
+    type: http
+    url: "__AIRPORT_A_URL__"
+    path: ./proxy_provider/airport-a-us.yaml
+    interval: 600
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+
+  # 备用：整订阅用于人工备用；美国节点用于 AI
+  # 排除机场订阅中的流量 / 到期 / 同步信息项
   备用:
     type: http
     url: "__BACKUP_URL__"
     path: ./proxy_provider/backup.yaml
     interval: 600
-    override:
-      additional-prefix: "备用｜"
+    exclude-filter: '(?i)(Expire|Traffic|Sync)'
+
+  备用 · 美国:
+    type: http
+    url: "__BACKUP_URL__"
+    path: ./proxy_provider/backup-us.yaml
+    interval: 600
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+    exclude-filter: '(?i)(Expire|Traffic|Sync)'
 
 # -------------------------
 # 远程规则
@@ -131,7 +153,7 @@ sniffer:
 
 # -------------------------
 # 策略组
-# 节点直接进入实际使用的策略组，不再通过中间辅助组二次嵌套
+# Provider 负责来源 + 地区筛选；策略组直接展示真实节点
 # -------------------------
 proxy-groups:
   - name: "🌐 全球代理策略"
@@ -140,28 +162,26 @@ proxy-groups:
       - "🚀 主力节点"
       - "🛟 备用节点"
 
-  # 自建全部节点 + 机场-A 香港节点
+  # 顺序：自建全部 → 机场-A 香港
   - name: "🚀 主力节点"
     type: select
     use:
       - 自建
-      - 机场-A
-    filter: '(?i)(^自建｜|^机场-A｜.*(🇭🇰|香港|Hong[ _-]?Kong|(^|[^A-Za-z])(HKG|HK)([^A-Za-z]|$)))'
+      - "机场-A · 香港"
 
-  # 备用订阅全部节点
+  # 备用整订阅，人工选择
   - name: "🛟 备用节点"
     type: select
     use:
       - 备用
 
-  # 只显示三个真实来源中的美国节点；来源通过节点名前缀保留
+  # 顺序：机场-A 美国 → 自建美国 → 备用美国
   - name: "🤖 AI"
     type: select
     use:
-      - 机场-A
-      - 自建
-      - 备用
-    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+      - "机场-A · 美国"
+      - "自建 · 美国"
+      - "备用 · 美国"
 
   - name: "🍅 番茄"
     type: select
