@@ -1,0 +1,261 @@
+# ============================================================
+# Primus Mihomo / Clash
+# 配置版本：2026.09.17.1
+#
+# 节点来源：自建 / 机场-A / 备用
+# 所有策略均为手动选择，不使用 url-test / fallback / load-balance
+# ============================================================
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+# -------------------------
+# GEO 数据
+# -------------------------
+geodata-mode: true
+geo-auto-update: true
+geo-update-interval: 24
+geox-url:
+  geoip: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
+  geosite: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb"
+  asn: "https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb"
+
+# -------------------------
+# 节点来源
+# 仅定时刷新订阅，不做自动健康检查或节点切换
+# -------------------------
+proxy-providers:
+  自建:
+    type: http
+    url: "__SELF_URL__"
+    path: ./proxy_provider/self.yaml
+    interval: 600
+
+  机场-A:
+    type: http
+    url: "__AIRPORT_A_URL__"
+    path: ./proxy_provider/airport-a.yaml
+    interval: 600
+
+  备用:
+    type: http
+    url: "__BACKUP_URL__"
+    path: ./proxy_provider/backup.yaml
+    interval: 600
+
+# -------------------------
+# 远程规则
+# -------------------------
+rule-providers:
+  DouYin:
+    type: http
+    behavior: classical
+    format: yaml
+    path: ./rule_provider/douyin.yaml
+    url: "https://rule.kelee.one/Clash/DouYin.yaml"
+    interval: 86400
+
+  XiaoHongShu:
+    type: http
+    behavior: classical
+    format: yaml
+    path: ./rule_provider/xiaohongshu.yaml
+    url: "https://rule.kelee.one/Clash/XiaoHongShu.yaml"
+    interval: 86400
+
+  SpeedtestInternational:
+    type: http
+    behavior: classical
+    format: yaml
+    path: ./rule_provider/speedtest-international.yaml
+    url: "https://kelee.one/Tool/Clash/Rule/SpeedtestInternational.yaml"
+    interval: 86400
+
+# -------------------------
+# DNS
+# -------------------------
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "localhost.ptlogin2.qq.com"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+  proxy-server-nameserver:
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+
+# -------------------------
+# 域名嗅探
+# -------------------------
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - "+.push.apple.com"
+
+# -------------------------
+# 策略组
+# 顶层全部手动 select；辅助组仅负责来源与地区筛选
+# -------------------------
+proxy-groups:
+  - name: "🌐 全球代理策略"
+    type: select
+    proxies:
+      - "🚀 主力节点"
+      - "🛟 备用节点"
+
+  - name: "🚀 主力节点"
+    type: select
+    proxies:
+      - "自建 · 全部"
+      - "机场-A · 香港"
+
+  - name: "🛟 备用节点"
+    type: select
+    proxies:
+      - "备用 · 全部"
+
+  - name: "🤖 AI"
+    type: select
+    proxies:
+      - "机场-A · 美国"
+      - "自建 · 美国"
+      - "备用 · 美国"
+
+  - name: "🍅 番茄"
+    type: select
+    proxies:
+      - DIRECT
+      - "🌐 全球代理策略"
+
+  - name: "🎵 抖音"
+    type: select
+    proxies:
+      - DIRECT
+      - "🌐 全球代理策略"
+
+  - name: "📕 小红书"
+    type: select
+    proxies:
+      - DIRECT
+      - "🌐 全球代理策略"
+
+  # 来源 / 地区辅助组
+  - name: "自建 · 全部"
+    type: select
+    use:
+      - 自建
+    hidden: true
+
+  - name: "机场-A · 香港"
+    type: select
+    use:
+      - 机场-A
+    filter: '(?i)(🇭🇰|香港|Hong[ _-]?Kong|(^|[^A-Za-z])(HKG|HK)([^A-Za-z]|$))'
+    hidden: true
+
+  - name: "机场-A · 美国"
+    type: select
+    use:
+      - 机场-A
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+    hidden: true
+
+  - name: "自建 · 美国"
+    type: select
+    use:
+      - 自建
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+    hidden: true
+
+  - name: "备用 · 全部"
+    type: select
+    use:
+      - 备用
+    hidden: true
+
+  - name: "备用 · 美国"
+    type: select
+    use:
+      - 备用
+    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
+    hidden: true
+
+# -------------------------
+# 分流规则
+# 专项规则优先；LAN / CN 靠后；最终进入全球代理策略
+# -------------------------
+rules:
+  # 固定直连
+  - DOMAIN-SUFFIX,4ktop.com,DIRECT
+
+  # 广告
+  - GEOSITE,category-ads-all,REJECT
+
+  # AI：只进入美国节点策略
+  - GEOSITE,openai,🤖 AI
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI
+  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI
+  - DOMAIN,gemini.google.com,🤖 AI
+  - DOMAIN,aistudio.google.com,🤖 AI
+  - DOMAIN-SUFFIX,x.ai,🤖 AI
+  - DOMAIN-SUFFIX,grok.com,🤖 AI
+  - DOMAIN,copilot.microsoft.com,🤖 AI
+
+  # 番茄：只保留核心域名，避免扩大到整个 snssdk.com
+  - DOMAIN-SUFFIX,fanqienovel.com,🍅 番茄
+  - DOMAIN,novel.snssdk.com,🍅 番茄
+  - DOMAIN,reading.snssdk.com,🍅 番茄
+
+  # 抖音 / 小红书 / 国际测速
+  - RULE-SET,DouYin,🎵 抖音
+  - RULE-SET,XiaoHongShu,📕 小红书
+  - RULE-SET,SpeedtestInternational,🌐 全球代理策略
+
+  # Apple / Microsoft 中国区直连；海外继续向下匹配
+  - GEOSITE,apple-cn,DIRECT
+  - GEOSITE,microsoft@cn,DIRECT
+
+  # 局域网 / 私有网络
+  - GEOSITE,private,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+
+  # 中国大陆
+  - GEOSITE,cn,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+
+  # 最终兜底
+  - MATCH,🌐 全球代理策略
