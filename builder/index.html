@@ -88,10 +88,12 @@
       <div id="loon-panel" class="hidden">
         <p>当前读取仓库中的 Loon 生产配置。节点订阅仍按现有方式在 Loon App 内维护。</p>
         <div class="actions">
-          <button id="load-loon" class="primary">载入 Loon 配置</button>
+          <button id="import-loon" class="primary">一键导入 Loon</button>
+          <button id="load-loon" class="secondary">载入 Loon 配置</button>
           <button id="copy-loon" class="secondary">复制 Loon</button>
           <button id="download-loon" class="secondary">下载 Primus-Loon.lcf</button>
         </div>
+        <p class="hint">一键导入会通过 Loon 官方导入页载入本仓库中的最新 Primus-Loon.lcf。</p>
       </div>
 
       <div id="status" class="status"></div>
@@ -101,6 +103,8 @@
 
 <script>
   const MIHOMO_API = "https://config.primusz.top/api/mihomo";
+  const LOON_RAW_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf";
+  const LOON_IMPORT_URL = "https://www.nsloon.com/openloon/import?sub=" + encodeURIComponent(LOON_RAW_URL);
 
   let mihomoTemplate = "";
   let loonConfig = "";
@@ -267,6 +271,11 @@
     window.location.href = scheme;
   }
 
+  function importLoon() {
+    status.textContent = "正在打开 Loon 一键导入…";
+    window.location.href = LOON_IMPORT_URL;
+  }
+
   document.getElementById("generate").addEventListener("click", generateMihomo);
   document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
   document.getElementById("download").addEventListener("click", () => downloadText(output.value, "Primus-Mihomo.yaml"));
@@ -275,6 +284,7 @@
   copySubscriptionButton.addEventListener("click", () => copyText(currentSubscriptionUrl, "订阅链接已复制"));
   importClashButton.addEventListener("click", importClashVerge);
 
+  document.getElementById("import-loon").addEventListener("click", importLoon);
   document.getElementById("load-loon").addEventListener("click", () => {
     output.value = loonConfig;
     status.textContent = loonConfig ? "Loon 配置已载入" : "Loon 配置尚未载入";
