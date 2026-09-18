@@ -73,5 +73,3 @@ Mihomo 私有订阅由独立 Cloudflare Worker 提供：
 `GitHub 仓库 → GitHub Pages Builder → Cloudflare primus-config + KV → Mihomo / Clash`
 
 Loon 配置直接由本仓库统一维护并通过 GitHub Pages / Raw 文件下发。
-
-旧的 Worker / 旧仓库链路不再属于当前生产架构。
