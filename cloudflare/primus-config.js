@@ -1,8 +1,9 @@
-// Primus Config Worker v2
-// Dynamic source + daily region selection for Mihomo.
-// Backward compatible with legacy KV records created by v1.
+// Primus Config Worker v3
+// Dynamic source + daily region selection for Mihomo and Loon.
+// Mihomo remains backward compatible with legacy KV records created by v1/v2.
 
-const TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
+const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
+const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
 const ALLOWED_ORIGIN = "https://primus-z-xt.github.io";
 const SOURCE_ORDER = ["airport", "self", "backup"];
 const SOURCE_META = {
@@ -134,11 +135,26 @@ function providerName(sourceKey, regionCode) {
 function buildProviders(config) {
   const needed = new Map();
   for (const sourceKey of config.daily_sources) {
+    // Legacy v1 behavior was: 自建全部 + 机场新加坡.
+    // Preserve that exactly for old KV tokens instead of incorrectly filtering 自建 by SG.
+    if (config._legacy && sourceKey === "self") continue;
     for (const regionCode of config.daily_regions) needed.set(`${sourceKey}:${regionCode}`, [sourceKey, regionCode]);
   }
   for (const sourceKey of config.ai_sources) needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
 
   const lines = [];
+
+  if (config._legacy && config.sources.self?.enabled) {
+    lines.push(
+      `  自建:`,
+      `    type: http`,
+      `    url: "${yamlEscape(config.sources.self.url)}"`,
+      `    path: ./proxy_provider/self.yaml`,
+      `    interval: 600`,
+      ``
+    );
+  }
+
   for (const sourceKey of SOURCE_ORDER) {
     if (!config.sources[sourceKey]?.enabled) continue;
     if (sourceKey === "backup") {
@@ -165,6 +181,10 @@ function buildProviders(config) {
 function buildGroups(config) {
   const dailyProviders = [];
   for (const sourceKey of config.daily_sources) {
+    if (config._legacy && sourceKey === "self") {
+      dailyProviders.push("自建");
+      continue;
+    }
     for (const regionCode of config.daily_regions) dailyProviders.push(providerName(sourceKey, regionCode));
   }
   const aiProviders = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
@@ -242,6 +262,181 @@ function renderTemplate(template, config) {
   throw new Error("GitHub Mihomo 模板格式无法识别");
 }
 
+
+function normalizeLoonPayload(body) {
+  const enabledSources = uniqueAllowed(body?.enabled_sources, SOURCE_ORDER);
+  if (!enabledSources.length) throw new Error("Loon 至少启用一个节点来源");
+
+  const dailySources = uniqueAllowed(body?.daily_sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  const dailyRegions = uniqueAllowed(body?.daily_regions, Object.keys(REGIONS));
+  const aiSources = uniqueAllowed(body?.ai_sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+
+  if (!dailySources.length) throw new Error("Loon 日用节点至少选择一个已启用来源");
+  if (!dailyRegions.length) throw new Error("Loon 日用节点至少选择一个地区");
+  if (!aiSources.length) throw new Error("Loon AI 至少选择一个已启用来源");
+
+  return {
+    version: 1,
+    enabled_sources: enabledSources,
+    daily_sources: dailySources,
+    daily_regions: dailyRegions,
+    ai_sources: aiSources
+  };
+}
+
+function buildLoonFilters(config) {
+  const needed = new Map();
+
+  for (const sourceKey of config.daily_sources) {
+    for (const regionCode of config.daily_regions) {
+      needed.set(`${sourceKey}:${regionCode}`, [sourceKey, regionCode]);
+    }
+  }
+  for (const sourceKey of config.ai_sources) {
+    needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
+  }
+
+  const lines = [];
+  for (const sourceKey of SOURCE_ORDER) {
+    if (!config.enabled_sources.includes(sourceKey)) continue;
+
+    if (sourceKey === "backup") {
+      lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+    }
+
+    for (const regionCode of Object.keys(REGIONS)) {
+      if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
+      const name = providerName(sourceKey, regionCode);
+      lines.push(`${name} = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${REGIONS[regionCode].regex}"`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function buildLoonGroups(config) {
+  const dailyFilters = [];
+  for (const sourceKey of config.daily_sources) {
+    for (const regionCode of config.daily_regions) {
+      dailyFilters.push(providerName(sourceKey, regionCode));
+    }
+  }
+
+  const aiFilters = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
+  const hasBackup = config.enabled_sources.includes("backup");
+
+  const globalItems = ["主力节点"];
+  if (hasBackup) globalItems.push("备用节点");
+
+  const lines = [
+    `全球代理策略 = select,${globalItems.join(",")},img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png`,
+    `主力节点 = select,${dailyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
+  ];
+
+  if (hasBackup) {
+    lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+  }
+
+  lines.push(
+    `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`,
+    `番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png`,
+    `抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png`,
+    `小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png`
+  );
+
+  return lines.join("\n");
+}
+
+function renderLoonTemplate(template, config) {
+  if (!template.includes("__REMOTE_FILTERS__") || !template.includes("__PROXY_GROUPS__")) {
+    throw new Error("GitHub Loon 模板缺少动态区块占位符");
+  }
+  return template
+    .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
+    .replace("__PROXY_GROUPS__", buildLoonGroups(config));
+}
+
+async function handleLoonPost(request, env) {
+  const origin = request.headers.get("Origin") || "";
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ error: "请求体必须是 JSON" }, 400, origin);
+  }
+
+  let config;
+  try {
+    config = normalizeLoonPayload(body);
+  } catch (e) {
+    return json({ error: e.message }, 400, origin);
+  }
+
+  const token = crypto.randomUUID().replaceAll("-", "");
+  await env.MIHOMO_KV.put(`loon:${token}`, JSON.stringify(config));
+
+  return json({
+    config_url: `https://config.primusz.top/loon/${token}`
+  }, 200, origin);
+}
+
+async function handleLoonGet(token, env) {
+  const raw = await env.MIHOMO_KV.get(`loon:${token}`);
+  if (!raw) {
+    return new Response("Loon config not found", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" }
+    });
+  }
+
+  let record;
+  try {
+    record = JSON.parse(raw);
+  } catch (_) {
+    return new Response("Invalid Loon config data", {
+      status: 500,
+      headers: { "Cache-Control": "no-store" }
+    });
+  }
+
+  let config;
+  try {
+    config = normalizeLoonPayload(record);
+  } catch (e) {
+    return new Response(`Invalid Loon config: ${e.message}`, {
+      status: 500,
+      headers: { "Cache-Control": "no-store" }
+    });
+  }
+
+  const templateResponse = await fetch(LOON_TEMPLATE_URL, {
+    cf: { cacheTtl: 0, cacheEverything: false }
+  });
+  if (!templateResponse.ok) {
+    return new Response("Failed to fetch Loon template", {
+      status: 502,
+      headers: { "Cache-Control": "no-store" }
+    });
+  }
+
+  try {
+    const lcf = renderLoonTemplate(await templateResponse.text(), config);
+    return new Response(lcf, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Disposition": "attachment; filename=Primus-Loon.lcf",
+        "Cache-Control": "no-store"
+      }
+    });
+  } catch (e) {
+    return new Response(`Loon config render failed: ${e.message}`, {
+      status: 500,
+      headers: { "Cache-Control": "no-store" }
+    });
+  }
+}
+
 async function handlePost(request, env) {
   const origin = request.headers.get("Origin") || "";
   let body;
@@ -275,7 +470,7 @@ async function handleGet(token, env) {
   const config = normalizeStored(record);
   if (!config.daily_sources.length || !config.ai_sources.length) return new Response("Subscription has no usable sources", { status: 500, headers: { "Cache-Control": "no-store" } });
 
-  const templateResponse = await fetch(TEMPLATE_URL, { cf: { cacheTtl: 0, cacheEverything: false } });
+  const templateResponse = await fetch(MIHOMO_TEMPLATE_URL, { cf: { cacheTtl: 0, cacheEverything: false } });
   if (!templateResponse.ok) return new Response("Failed to fetch template", { status: 502, headers: { "Cache-Control": "no-store" } });
 
   try {
@@ -300,9 +495,13 @@ export default {
 
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (request.method === "POST" && url.pathname === "/api/mihomo") return handlePost(request, env);
+    if (request.method === "POST" && url.pathname === "/api/loon") return handleLoonPost(request, env);
 
-    const match = url.pathname.match(/^\/mihomo\/([A-Za-z0-9_-]+)$/);
-    if (request.method === "GET" && match) return handleGet(match[1], env);
+    const mihomoMatch = url.pathname.match(/^\/mihomo\/([A-Za-z0-9_-]+)$/);
+    if (request.method === "GET" && mihomoMatch) return handleGet(mihomoMatch[1], env);
+
+    const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)$/);
+    if (request.method === "GET" && loonMatch) return handleLoonGet(loonMatch[1], env);
 
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
   }

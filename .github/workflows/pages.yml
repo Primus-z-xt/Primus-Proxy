@@ -38,6 +38,7 @@ jobs:
           cp builder/app.js _site/app.js
           cp mihomo/template.yaml _site/template.yaml
           cp loon/Primus-Loon.lcf _site/Primus-Loon.lcf
+          cp loon/template.lcf _site/Loon-template.lcf
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
