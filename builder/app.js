@@ -1,8 +1,9 @@
 
   const MIHOMO_API = "https://config.primusz.top/api/mihomo";
-  const LOON_RAW_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf";
-  const LOON_IMPORT_URL = "https://www.nsloon.com/openloon/import?sub=" + encodeURIComponent(LOON_RAW_URL);
+  const LOON_API = "https://config.primusz.top/api/loon";
+  const LOON_IMPORT_BASE = "https://www.nsloon.com/openloon/import?sub=";
   const STORAGE_KEY = "primus-proxy-builder-v2";
+  const LOON_STORAGE_KEY = "primus-proxy-loon-builder-v1";
   const SOURCE_ORDER = ["airport", "self", "backup"];
   const SOURCE_META = {
     airport: { label: "机场", path: "airport", enableId: "enable-airport", urlId: "airport-url" },
@@ -42,7 +43,9 @@
   };
 
   let mihomoTemplate = "";
+  let loonTemplate = "";
   let loonConfig = "";
+  let loonGeneratedFingerprint = "";
   let currentSubscriptionUrl = "";
 
   const output = document.getElementById("output");
@@ -51,6 +54,33 @@
   const createSubscriptionButton = document.getElementById("create-subscription");
   const copySubscriptionButton = document.getElementById("copy-subscription");
   const importClashButton = document.getElementById("import-clash");
+  const importLoonButton = document.getElementById("import-loon");
+
+  function renderLoonRegionOptions() {
+    const root = document.getElementById("loon-region-options");
+    root.innerHTML = "";
+    for (const group of REGION_GROUPS) {
+      const title = document.createElement("div");
+      title.className = "group-title";
+      title.textContent = group.title;
+      root.appendChild(title);
+      const grid = document.createElement("div");
+      grid.className = "option-grid";
+      for (const code of group.codes) {
+        const region = REGIONS[code];
+        const label = document.createElement("label");
+        label.className = "check-item";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "loon-daily-region";
+        input.dataset.region = code;
+        input.checked = code === "SG";
+        label.append(input, document.createTextNode(`${region.flag} ${region.label}`));
+        grid.appendChild(label);
+      }
+      root.appendChild(grid);
+    }
+  }
 
   function renderRegionOptions() {
     const root = document.getElementById("region-options");
@@ -82,11 +112,11 @@
     try {
       const [m, l] = await Promise.all([
         fetch("./template.yaml", { cache: "no-store" }),
-        fetch("./Primus-Loon.lcf", { cache: "no-store" })
+        fetch("./Loon-template.lcf", { cache: "no-store" })
       ]);
       if (!m.ok || !l.ok) throw new Error("配置模板载入失败");
       mihomoTemplate = await m.text();
-      loonConfig = await l.text();
+      loonTemplate = await l.text();
       status.textContent = "模板已载入";
     } catch (e) {
       status.textContent = e.message;
@@ -294,6 +324,186 @@
     }
   }
 
+
+  function getLoonConfigFromUi() {
+    const enabledSources = selectedValues(".loon-enabled-source", "source");
+    return {
+      version: 1,
+      enabled_sources: enabledSources,
+      daily_sources: selectedValues(".loon-daily-source", "source").filter(key => enabledSources.includes(key)),
+      daily_regions: selectedValues(".loon-daily-region", "region"),
+      ai_sources: selectedValues(".loon-ai-source", "source").filter(key => enabledSources.includes(key))
+    };
+  }
+
+  function validateLoonConfig(config) {
+    if (!config.enabled_sources.length) return "Loon 至少启用一个节点来源";
+    if (!config.daily_sources.length) return "Loon 日用节点至少选择一个已启用来源";
+    if (!config.daily_regions.length) return "Loon 日用节点至少选择一个地区";
+    if (!config.ai_sources.length) return "Loon AI 至少选择一个已启用来源";
+    return "";
+  }
+
+  function buildLoonFilters(config) {
+    const needed = new Map();
+    for (const sourceKey of config.daily_sources) {
+      for (const regionCode of config.daily_regions) {
+        needed.set(`${sourceKey}:${regionCode}`, [sourceKey, regionCode]);
+      }
+    }
+    for (const sourceKey of config.ai_sources) {
+      needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
+    }
+
+    const lines = [];
+    for (const sourceKey of SOURCE_ORDER) {
+      if (!config.enabled_sources.includes(sourceKey)) continue;
+      if (sourceKey === "backup") {
+        lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+      }
+      for (const regionCode of Object.keys(REGIONS)) {
+        if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
+        lines.push(`${providerName(sourceKey, regionCode)} = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${REGIONS[regionCode].regex}"`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  function buildLoonGroups(config) {
+    const dailyFilters = [];
+    for (const sourceKey of config.daily_sources) {
+      for (const regionCode of config.daily_regions) {
+        dailyFilters.push(providerName(sourceKey, regionCode));
+      }
+    }
+
+    const aiFilters = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
+    const hasBackup = config.enabled_sources.includes("backup");
+    const globalItems = ["主力节点"];
+    if (hasBackup) globalItems.push("备用节点");
+
+    const lines = [
+      `全球代理策略 = select,${globalItems.join(",")},img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png`,
+      `主力节点 = select,${dailyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
+    ];
+
+    if (hasBackup) {
+      lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+    }
+
+    lines.push(
+      `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`,
+      `番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png`,
+      `抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png`,
+      `小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png`
+    );
+
+    return lines.join("\n");
+  }
+
+  function renderLoon(config) {
+    if (!loonTemplate.includes("__REMOTE_FILTERS__") || !loonTemplate.includes("__PROXY_GROUPS__")) {
+      throw new Error("Loon 模板缺少动态区块占位符");
+    }
+    return loonTemplate
+      .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
+      .replace("__PROXY_GROUPS__", buildLoonGroups(config));
+  }
+
+  function loonFingerprint(config) {
+    return JSON.stringify({
+      enabled_sources: config.enabled_sources,
+      daily_sources: config.daily_sources,
+      daily_regions: config.daily_regions,
+      ai_sources: config.ai_sources
+    });
+  }
+
+  function saveLoonSelections() {
+    const config = getLoonConfigFromUi();
+    localStorage.setItem(LOON_STORAGE_KEY, loonFingerprint(config));
+  }
+
+  function restoreLoonSelections() {
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem(LOON_STORAGE_KEY) || "null"); } catch (_) { return; }
+    if (!saved) return;
+    if (Array.isArray(saved.enabled_sources)) document.querySelectorAll(".loon-enabled-source").forEach(el => { el.checked = saved.enabled_sources.includes(el.dataset.source); });
+    if (Array.isArray(saved.daily_sources)) document.querySelectorAll(".loon-daily-source").forEach(el => { el.checked = saved.daily_sources.includes(el.dataset.source); });
+    if (Array.isArray(saved.daily_regions)) document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = saved.daily_regions.includes(el.dataset.region); });
+    if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".loon-ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
+  }
+
+  function invalidateLoonGeneration(message = "") {
+    loonConfig = "";
+    loonGeneratedFingerprint = "";
+    importLoonButton.disabled = true;
+    if (message) status.textContent = message;
+  }
+
+  function syncLoonSourceUi(invalidate = true) {
+    const enabled = selectedValues(".loon-enabled-source", "source");
+    document.querySelectorAll(".loon-daily-source,.loon-ai-source").forEach(el => {
+      el.disabled = !enabled.includes(el.dataset.source);
+    });
+    saveLoonSelections();
+    if (invalidate) invalidateLoonGeneration("Loon 选择已变更，请重新生成配置");
+  }
+
+  function generateLoon() {
+    const config = getLoonConfigFromUi();
+    const error = validateLoonConfig(config);
+    if (error) { status.textContent = error; return; }
+    if (!loonTemplate) { status.textContent = "Loon 模板尚未载入"; return; }
+
+    try {
+      loonConfig = renderLoon(config);
+      loonGeneratedFingerprint = loonFingerprint(config);
+      output.value = loonConfig;
+      importLoonButton.disabled = false;
+      saveLoonSelections();
+      status.textContent = "Loon 配置已生成。下一步先导入配置，再到 Loon App 添加节点资源。";
+    } catch (e) {
+      invalidateLoonGeneration();
+      status.textContent = e.message;
+    }
+  }
+
+  async function importLoon() {
+    const config = getLoonConfigFromUi();
+    const error = validateLoonConfig(config);
+    if (error) { status.textContent = error; return; }
+
+    if (!loonConfig || loonGeneratedFingerprint !== loonFingerprint(config)) {
+      invalidateLoonGeneration();
+      status.textContent = "当前选择与已生成配置不一致，请先重新生成 Loon 配置";
+      return;
+    }
+
+    importLoonButton.disabled = true;
+    status.textContent = "正在准备 Loon 配置导入链接…";
+
+    try {
+      const response = await fetch(LOON_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config)
+      });
+
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error(data.error || `后端请求失败 (${response.status})`);
+      if (!validUrl(data.config_url || "")) throw new Error("后端未返回有效 Loon 配置地址");
+
+      status.textContent = "正在打开 Loon 配置导入。导入完成后再添加节点资源。";
+      window.location.href = LOON_IMPORT_BASE + encodeURIComponent(data.config_url);
+    } catch (e) {
+      status.textContent = `Loon 导入准备失败：${e.message}`;
+    } finally {
+      importLoonButton.disabled = false;
+    }
+  }
+
   async function copyText(text, ok) {
     if (!text) { status.textContent = "当前没有可复制的内容"; return; }
     try {
@@ -325,14 +535,12 @@
     window.location.href = `clash://install-config?url=${encodeURIComponent(currentSubscriptionUrl)}`;
   }
 
-  function importLoon() {
-    status.textContent = "正在打开 Loon 一键导入…";
-    window.location.href = LOON_IMPORT_URL;
-  }
-
   renderRegionOptions();
+  renderLoonRegionOptions();
   restoreSelections();
+  restoreLoonSelections();
   syncSourceUi();
+  syncLoonSourceUi(false);
   loadAssets();
 
   document.getElementById("generate").addEventListener("click", generateMihomo);
@@ -342,13 +550,26 @@
   copySubscriptionButton.addEventListener("click", () => copyText(currentSubscriptionUrl, "订阅链接已复制"));
   importClashButton.addEventListener("click", importClashVerge);
 
-  document.getElementById("import-loon").addEventListener("click", importLoon);
-  document.getElementById("load-loon").addEventListener("click", () => {
-    output.value = loonConfig;
-    status.textContent = loonConfig ? "Loon 配置已载入" : "Loon 配置尚未载入";
-  });
+  document.getElementById("generate-loon").addEventListener("click", generateLoon);
+  importLoonButton.addEventListener("click", importLoon);
   document.getElementById("copy-loon").addEventListener("click", () => copyText(loonConfig, "Loon 配置已复制"));
   document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, "Primus-Loon.lcf"));
+
+  document.querySelectorAll(".loon-enabled-source").forEach(el => el.addEventListener("change", () => syncLoonSourceUi(true)));
+  document.querySelectorAll(".loon-daily-source,.loon-daily-region,.loon-ai-source").forEach(el => el.addEventListener("change", () => {
+    saveLoonSelections();
+    invalidateLoonGeneration("Loon 选择已变更，请重新生成配置");
+  }));
+  document.getElementById("loon-select-all-regions").addEventListener("click", () => {
+    document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = true; });
+    saveLoonSelections();
+    invalidateLoonGeneration("Loon 地区选择已变更，请重新生成配置");
+  });
+  document.getElementById("loon-clear-regions").addEventListener("click", () => {
+    document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = false; });
+    saveLoonSelections();
+    invalidateLoonGeneration("Loon 地区选择已变更，请重新生成配置");
+  });
 
   document.getElementById("show-urls").addEventListener("change", e => {
     for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].urlId).type = e.target.checked ? "text" : "password";
