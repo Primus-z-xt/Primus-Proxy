@@ -5,7 +5,7 @@
 当前生产版本：
 
 - Mihomo / Clash：`v2`
-- Loon：`v19`
+- Loon：`v20`
 
 ## 配置生成器
 
@@ -42,16 +42,28 @@
 
 ### Loon
 
-1. 打开“配置生成器”。
-2. 切换到 **Loon**。
-3. 可直接载入、复制或下载当前 `Primus-Loon.lcf`。
-4. 节点订阅继续在 Loon App 内以 `机场 / 自建 / 备用` 三个资源名称维护。
+Loon 与 Mihomo 采用同一套“来源 + 地区”选择逻辑，但 **Loon 不在配置文件里保存节点订阅 URL**。
 
-当前 Loon 配置文件：
+正确顺序必须是：
+
+1. 打开“配置生成器”，切换到 **Loon**。
+2. 先选择要启用的来源：`机场 / 自建 / 备用`。
+3. 在“日用节点”中选择来源和一个或多个地区。
+4. AI 地区固定为美国，只选择要参与 AI 的来源。
+5. 点击 **生成 Loon 配置**，先生成并检查当前配置。
+6. 点击 **一键导入 Loon 配置**，先把配置文件导入 Loon。
+7. **最后**再到 Loon App 中添加节点订阅资源；资源名称必须严格使用 `机场 / 自建 / 备用`。
+8. 没有启用的来源不需要在 Loon 里添加。
+
+如果来源或地区在生成后被修改，Builder 会自动让“一键导入 Loon 配置”失效，必须重新生成，避免导入旧配置。
+
+当前默认 Loon 配置文件：
 
 https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf
 
-Loon 当前保持静态手动策略：日用使用自建及机场新加坡，AI 使用各来源中的美国节点。Mihomo 的“来源 + 地区”动态选择只在 Builder / primus-config 链路中生成。
+动态模板：
+
+https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf
 
 ## Mihomo 订阅后端
 
@@ -62,6 +74,8 @@ Mihomo 私有订阅由独立 Cloudflare Worker 提供：
 - 存储：Cloudflare KV
 - 模板：本仓库 `mihomo/template.yaml`
 - Worker 源码：本仓库 `cloudflare/primus-config.js`
+- Mihomo 动态接口：`/api/mihomo` → `/mihomo/<token>`
+- Loon 动态接口：`/api/loon` → `/loon/<token>`
 
 工作方式：配置生成器把已启用的上游订阅地址、日用来源、日用地区和 AI 来源提交到 Worker。Worker 生成随机 token 并保存到 KV。客户端访问 `https://config.primusz.top/mihomo/<token>` 时，Worker 会读取仓库中的最新 Mihomo 模板，并按该 token 保存的选择动态生成 Provider 与策略组。
 
@@ -83,3 +97,10 @@ Mihomo 私有订阅由独立 Cloudflare Worker 提供：
 `GitHub 仓库 → GitHub Pages Builder → Cloudflare primus-config + KV → Mihomo / Clash`
 
 Loon 配置直接由本仓库统一维护并通过 GitHub Pages / Raw 文件下发。
+
+
+## Loon 动态配置说明
+
+Loon 的 token 只保存“启用来源 / 日用来源 / 日用地区 / AI 来源”等配置选择，不保存任何节点订阅 URL。节点订阅仍由用户在 Loon App 中手动维护。
+
+之所以要求“先导入配置，再添加节点”，是为了把配置结构和节点资源彻底分开：配置文件只负责 Remote Filter、策略组和规则；节点资源后续按 `机场 / 自建 / 备用` 的固定名称加入后，会自动被对应筛选器引用。
