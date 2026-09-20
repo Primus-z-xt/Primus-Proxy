@@ -211,13 +211,35 @@ function buildGroups(config) {
   return lines.join("\n");
 }
 
+function sameArray(a, b) {
+  return Array.isArray(a) && a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function isLegacyDefault(config) {
+  return sameArray(config.daily_sources, ["self", "airport"])
+    && sameArray(config.daily_regions, ["SG"])
+    && sameArray(config.ai_sources, ["airport", "self", "backup"])
+    && SOURCE_ORDER.every(key => config.sources[key]?.enabled && validUrl(config.sources[key]?.url));
+}
+
 function renderTemplate(template, config) {
-  if (!template.includes("__PROXY_PROVIDERS__") || !template.includes("__PROXY_GROUPS__")) {
-    throw new Error("GitHub Mihomo 模板缺少动态区块占位符");
+  if (template.includes("__PROXY_PROVIDERS__") && template.includes("__PROXY_GROUPS__")) {
+    return template
+      .replace("__PROXY_PROVIDERS__", buildProviders(config))
+      .replace("__PROXY_GROUPS__", buildGroups(config));
   }
-  return template
-    .replace("__PROXY_PROVIDERS__", buildProviders(config))
-    .replace("__PROXY_GROUPS__", buildGroups(config));
+
+  // Zero-downtime rollout: before main switches to the v2 template, keep legacy
+  // tokens and the v1 Builder working against the old three-placeholder template.
+  if (template.includes("__SELF_URL__") && template.includes("__AIRPORT_A_URL__") && template.includes("__BACKUP_URL__")) {
+    if (!isLegacyDefault(config)) throw new Error("Mihomo v2 模板尚未发布到 main");
+    return template
+      .replaceAll("__SELF_URL__", yamlEscape(config.sources.self.url))
+      .replaceAll("__AIRPORT_A_URL__", yamlEscape(config.sources.airport.url))
+      .replaceAll("__BACKUP_URL__", yamlEscape(config.sources.backup.url));
+  }
+
+  throw new Error("GitHub Mihomo 模板格式无法识别");
 }
 
 async function handlePost(request, env) {
