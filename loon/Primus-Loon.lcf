@@ -1,17 +1,17 @@
 # ============================================================
-# Primus Loon 主备手动版
+# Primus Loon 动态手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v19
-# 更新日期：2026-09-20 11:35:14
+# 版本：v20
+# 更新日期：2026-09-20 12:55:00
 #
-# 基于：iKeLee《Loon 手动配置》模板
-# 原作者：https://t.me/iKeLee
-# 插件来源：https://hub.kelee.one
-#
-# 节点来源：自建 / 机场 / 备用
-# 日用：自建全部 + 机场 新加坡；AI：仅筛选各实际来源中的美国节点
+# 节点来源：机场 / 自建 / 备用
+# 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
 # 全部使用手动选择，不使用 url-test / fallback
-# 不预留不存在的机场订阅，避免 Loon 将其按 ALL 处理
+#
+# 使用顺序：
+# 1. 先导入本配置
+# 2. 再在 Loon App 内添加已启用的节点订阅资源
+# 3. 资源名称必须严格使用：机场 / 自建 / 备用
 # ============================================================
 
 [General]
@@ -40,37 +40,23 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 [Proxy]
 
 [Remote Proxy]
-# 节点订阅由 Loon App 内手动添加
-# 当前命名：自建 / 机场 / 备用
-# 仅为实际存在的订阅建立筛选；新增机场后再增加对应 Filter
+# 节点订阅不写入配置文件。
+# 请先导入本配置，再在 Loon App 中添加对应订阅资源。
+# 资源名称必须与所选来源完全一致：机场 / 自建 / 备用。
 
 [Remote Filter]
-# 自建：整体用于日用，同时单独筛选美国节点供 AI 使用
-自建 · 全部 = NameRegex,自建, FilterKey = ".*"
-自建 · 美国 = NameRegex,自建, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
-
-# 机场：新加坡用于日用，美国用于 AI
-机场 · 新加坡 = NameRegex,机场, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|SGP|SIN|SG)"
-机场 · 美国 = NameRegex,机场, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
-
-# 备用：日用保持整订阅，AI 只筛选其中的美国节点
+机场 · 新加坡 = NameRegex,机场, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))"
+机场 · 美国 = NameRegex,机场, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
+自建 · 新加坡 = NameRegex,自建, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))"
+自建 · 美国 = NameRegex,自建, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
 备用 · 全部 = NameRegex,备用, FilterKey = ".*"
-备用 · 美国 = NameRegex,备用, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
+备用 · 美国 = NameRegex,备用, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
 
 [Proxy Group]
-# 总入口
 全球代理策略 = select,主力节点,备用节点,img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png
-
-# 主力：自建优先，其次新加坡机场
-主力节点 = select,自建 · 全部,机场 · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
-
-# 备用：整个备用订阅
+主力节点 = select,机场 · 新加坡,自建 · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
 备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
-
-# AI：仅提供各实际来源中的美国节点，全部手动选择
 AI = select,机场 · 美国,自建 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
-
-# 国内 App：默认直连，需要时手动切换
 番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png
 抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png
 小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png
