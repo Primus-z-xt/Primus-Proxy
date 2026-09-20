@@ -62,12 +62,12 @@
   <main class="wrap">
     <h1>Primus Proxy Config</h1>
     <p class="sub">Loon / Mihomo 配置统一入口</p>
-    <p class="version-line">Mihomo v2 · Loon v19</p>
+    <p class="version-line">Mihomo v2 · Loon v20</p>
 
     <section class="card">
       <div class="tabs">
         <button class="tab active" data-tab="mihomo">Mihomo / Clash · v2</button>
-        <button class="tab" data-tab="loon">Loon · v19</button>
+        <button class="tab" data-tab="loon">Loon · v20</button>
       </div>
 
       <div id="mihomo-panel">
@@ -139,14 +139,61 @@
       </div>
 
       <div id="loon-panel" class="hidden">
-        <p>当前读取仓库中的 Loon 生产配置。节点订阅仍按现有方式在 Loon App 内维护，资源名称统一为“机场 / 自建 / 备用”。</p>
+        <div class="subcard">
+          <h3>使用顺序</h3>
+          <p class="hint"><strong>1. 先选来源和地区 → 2. 生成 Loon 配置 → 3. 一键导入配置 → 4. 最后在 Loon App 里添加节点订阅资源。</strong></p>
+          <p class="hint">节点订阅不会写入配置文件。你在 Loon 内后添加的资源名称必须严格叫：<strong>机场 / 自建 / 备用</strong>。没有启用的来源不需要导入节点。</p>
+        </div>
+
+        <div class="subcard">
+          <h3>节点来源</h3>
+          <div class="option-grid">
+            <label class="check-item"><input id="loon-enable-airport" class="loon-enabled-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input id="loon-enable-self" class="loon-enabled-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input id="loon-enable-backup" class="loon-enabled-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>🚀 日用节点</h3>
+          <div class="group-title">来源</div>
+          <div class="option-grid">
+            <label class="check-item"><input class="loon-daily-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
+          </div>
+          <div class="group-title">地区（可多选）</div>
+          <div class="inline-actions">
+            <button id="loon-select-all-regions" type="button" class="secondary mini">全选</button>
+            <button id="loon-clear-regions" type="button" class="secondary mini">清空</button>
+          </div>
+          <div id="loon-region-options"></div>
+        </div>
+
+        <div class="subcard">
+          <h3>🤖 AI</h3>
+          <div class="group-title">地区</div>
+          <div class="fixed">🇺🇸 美国（固定）</div>
+          <div class="group-title">来源</div>
+          <div class="option-grid">
+            <label class="check-item"><input class="loon-ai-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>
+
         <div class="actions">
-          <button id="import-loon" class="primary">一键导入 Loon</button>
-          <button id="load-loon" class="secondary">载入 Loon 配置</button>
+          <button id="generate-loon" class="primary">生成 Loon 配置</button>
           <button id="copy-loon" class="secondary">复制 Loon</button>
           <button id="download-loon" class="secondary">下载 Primus-Loon.lcf</button>
         </div>
-        <p class="hint">一键导入会通过 Loon 官方导入页载入本仓库中的最新 Primus-Loon.lcf。</p>
+
+        <div class="subscription-box">
+          <div class="actions">
+            <button id="import-loon" class="primary" disabled>一键导入 Loon 配置</button>
+          </div>
+          <p class="hint">只有先生成当前选择对应的配置后，这个按钮才会启用；如果你之后修改了来源或地区，必须重新生成，避免导入旧配置。</p>
+        </div>
       </div>
 
       <div id="status" class="status"></div>
