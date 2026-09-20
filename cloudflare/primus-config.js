@@ -135,11 +135,26 @@ function providerName(sourceKey, regionCode) {
 function buildProviders(config) {
   const needed = new Map();
   for (const sourceKey of config.daily_sources) {
+    // Legacy v1 behavior was: 自建全部 + 机场新加坡.
+    // Preserve that exactly for old KV tokens instead of incorrectly filtering 自建 by SG.
+    if (config._legacy && sourceKey === "self") continue;
     for (const regionCode of config.daily_regions) needed.set(`${sourceKey}:${regionCode}`, [sourceKey, regionCode]);
   }
   for (const sourceKey of config.ai_sources) needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
 
   const lines = [];
+
+  if (config._legacy && config.sources.self?.enabled) {
+    lines.push(
+      `  自建:`,
+      `    type: http`,
+      `    url: "${yamlEscape(config.sources.self.url)}"`,
+      `    path: ./proxy_provider/self.yaml`,
+      `    interval: 600`,
+      ``
+    );
+  }
+
   for (const sourceKey of SOURCE_ORDER) {
     if (!config.sources[sourceKey]?.enabled) continue;
     if (sourceKey === "backup") {
@@ -166,6 +181,10 @@ function buildProviders(config) {
 function buildGroups(config) {
   const dailyProviders = [];
   for (const sourceKey of config.daily_sources) {
+    if (config._legacy && sourceKey === "self") {
+      dailyProviders.push("自建");
+      continue;
+    }
     for (const regionCode of config.daily_regions) dailyProviders.push(providerName(sourceKey, regionCode));
   }
   const aiProviders = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
