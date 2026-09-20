@@ -1,15 +1,15 @@
 # ============================================================
 # Primus Loon 主备手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v18
-# 更新日期：2026-09-17 16:55:27
+# 版本：v19
+# 更新日期：2026-09-20 11:35:14
 #
 # 基于：iKeLee《Loon 手动配置》模板
 # 原作者：https://t.me/iKeLee
 # 插件来源：https://hub.kelee.one
 #
-# 节点来源：自建 / 机场-A / 备用
-# 日用：自建全部 + 机场-A 新加坡；AI：仅筛选各实际来源中的美国节点
+# 节点来源：自建 / 机场 / 备用
+# 日用：自建全部 + 机场 新加坡；AI：仅筛选各实际来源中的美国节点
 # 全部使用手动选择，不使用 url-test / fallback
 # 不预留不存在的机场订阅，避免 Loon 将其按 ALL 处理
 # ============================================================
@@ -41,7 +41,7 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 
 [Remote Proxy]
 # 节点订阅由 Loon App 内手动添加
-# 当前命名：自建 / 机场-A / 备用
+# 当前命名：自建 / 机场 / 备用
 # 仅为实际存在的订阅建立筛选；新增机场后再增加对应 Filter
 
 [Remote Filter]
@@ -49,9 +49,9 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 自建 · 全部 = NameRegex,自建, FilterKey = ".*"
 自建 · 美国 = NameRegex,自建, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
 
-# 机场-A：新加坡用于日用，美国用于 AI
-机场-A · 新加坡 = NameRegex,机场-A, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|SGP|SIN|SG)"
-机场-A · 美国 = NameRegex,机场-A, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
+# 机场：新加坡用于日用，美国用于 AI
+机场 · 新加坡 = NameRegex,机场, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|SGP|SIN|SG)"
+机场 · 美国 = NameRegex,机场, FilterKey = "(?i)(🇺🇸|美国|United States|USA|US|Los Angeles|LAX|San Jose|SJC|Seattle|SEA)"
 
 # 备用：日用保持整订阅，AI 只筛选其中的美国节点
 备用 · 全部 = NameRegex,备用, FilterKey = ".*"
@@ -62,13 +62,13 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 全球代理策略 = select,主力节点,备用节点,img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png
 
 # 主力：自建优先，其次新加坡机场
-主力节点 = select,自建 · 全部,机场-A · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
+主力节点 = select,自建 · 全部,机场 · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
 
 # 备用：整个备用订阅
 备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
 
 # AI：仅提供各实际来源中的美国节点，全部手动选择
-AI = select,机场-A · 美国,自建 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
+AI = select,机场 · 美国,自建 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
 
 # 国内 App：默认直连，需要时手动切换
 番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png
