@@ -1,11 +1,11 @@
 # ============================================================
 # Primus Mihomo / Clash
 # 文件名：Primus-Mihomo.yaml
-# 版本：v1
-# 更新日期：2026-09-17 16:54:39
+# 版本：v2
+# 更新日期：2026-09-20 11:35:14
 #
-# 节点来源：自建 / 机场-A / 备用
-# 日用：自建全部 + 机场-A 新加坡；AI：仅筛选各实际来源中的美国节点
+# 节点来源：机场 / 自建 / 备用
+# 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
 # 所有策略均为手动选择，不使用 url-test / fallback / load-balance
 # ============================================================
 
@@ -35,54 +35,10 @@ geox-url:
 
 # -------------------------
 # 节点来源
-# 同一真实订阅可按用途建立独立 Provider 筛选；节点名称保持订阅原样
+# 此区块由 Primus Builder / primus-config 根据“来源 + 地区”动态生成
 # -------------------------
 proxy-providers:
-  # 自建：全部节点用于日用；美国节点用于 AI
-  自建:
-    type: http
-    url: "__SELF_URL__"
-    path: ./proxy_provider/self.yaml
-    interval: 600
-
-  自建 · 美国:
-    type: http
-    url: "__SELF_URL__"
-    path: ./proxy_provider/self-us.yaml
-    interval: 600
-    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
-
-  # 机场-A：新加坡节点用于日用；美国节点用于 AI
-  机场-A · 新加坡:
-    type: http
-    url: "__AIRPORT_A_URL__"
-    path: ./proxy_provider/airport-a-sg.yaml
-    interval: 600
-    filter: '(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))'
-
-  机场-A · 美国:
-    type: http
-    url: "__AIRPORT_A_URL__"
-    path: ./proxy_provider/airport-a-us.yaml
-    interval: 600
-    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
-
-  # 备用：整订阅用于人工备用；美国节点用于 AI
-  # 排除机场订阅中的流量 / 到期 / 同步等信息项
-  备用:
-    type: http
-    url: "__BACKUP_URL__"
-    path: ./proxy_provider/backup.yaml
-    interval: 600
-    exclude-filter: '(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)'
-
-  备用 · 美国:
-    type: http
-    url: "__BACKUP_URL__"
-    path: ./proxy_provider/backup-us.yaml
-    interval: 600
-    filter: '(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))'
-    exclude-filter: '(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)'
+__PROXY_PROVIDERS__
 
 # -------------------------
 # 远程规则
@@ -168,53 +124,10 @@ sniffer:
 
 # -------------------------
 # 策略组
-# Provider 负责来源 + 地区筛选；策略组直接展示真实节点
+# 此区块由 Primus Builder / primus-config 根据选择动态生成
 # -------------------------
 proxy-groups:
-  - name: "🌐 全球代理策略"
-    type: select
-    proxies:
-      - "🚀 日用节点"
-      - "🛟 备用节点"
-
-  # 顺序：自建全部 → 机场-A 新加坡
-  - name: "🚀 日用节点"
-    type: select
-    use:
-      - 自建
-      - "机场-A · 新加坡"
-
-  # 备用整订阅，人工选择
-  - name: "🛟 备用节点"
-    type: select
-    use:
-      - 备用
-
-  # 顺序：机场-A 美国 → 自建美国 → 备用美国
-  - name: "🤖 AI"
-    type: select
-    use:
-      - "机场-A · 美国"
-      - "自建 · 美国"
-      - "备用 · 美国"
-
-  - name: "🍅 番茄"
-    type: select
-    proxies:
-      - DIRECT
-      - "🌐 全球代理策略"
-
-  - name: "🎵 抖音"
-    type: select
-    proxies:
-      - DIRECT
-      - "🌐 全球代理策略"
-
-  - name: "📕 小红书"
-    type: select
-    proxies:
-      - DIRECT
-      - "🌐 全球代理策略"
+__PROXY_GROUPS__
 
 # -------------------------
 # 分流规则
@@ -227,7 +140,7 @@ rules:
   # 广告
   - GEOSITE,category-ads-all,REJECT
 
-  # AI：使用可莉 AI RuleSet，直接进入美国节点策略
+  # AI：地区固定美国，来源由 Builder 选择
   - RULE-SET,AI,🤖 AI
 
   # 番茄
