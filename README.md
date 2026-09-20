@@ -4,8 +4,8 @@
 
 当前生产版本：
 
-- Mihomo / Clash：`v1`
-- Loon：`v18`
+- Mihomo / Clash：`v2`
+- Loon：`v19`
 
 ## 配置生成器
 
@@ -20,33 +20,38 @@
 ### Mihomo / Clash
 
 1. 打开上面的“配置生成器”。
-2. 依次粘贴：`自建`、`机场-A`、`备用` 三个订阅链接。
-3. 可直接点击 **生成配置**，在浏览器本地生成 YAML。
-4. 也可点击 **生成订阅链接**，生成长期可用的 Primus 私有订阅地址。
-5. 可复制订阅链接，或点击 **一键导入 Clash Verge Rev**。
-6. 本地下载文件名为 `Primus-Mihomo.yaml`；Clash Verge Rev 中订阅显示名为 `Primus`。
+2. 在“节点来源”中按需启用 `机场`、`自建`、`备用`，只需要为已启用来源填写订阅链接。
+3. 在“🚀 日用节点”中选择要参与日用的来源，并多选需要的国家 / 地区。
+4. “🤖 AI”地区固定为美国，仅选择要参与 AI 的来源。
+5. 点击 **生成配置**，可在浏览器本地生成 YAML；也可点击 **生成订阅链接**，生成长期可用的 Primus 私有订阅地址。
+6. 可复制订阅链接，或点击 **一键导入 Clash Verge Rev**。
+7. 本地下载文件名为 `Primus-Mihomo.yaml`；Clash Verge Rev 中订阅显示名为 `Primus`.
 
 当前节点策略：
 
-- 日用：`自建全部 + 机场-A 新加坡`
-- AI：仅使用 `机场-A / 自建 / 备用` 中的美国节点
-- 备用：整个备用订阅，手动选择
+- 节点来源统一命名为：`机场 / 自建 / 备用`
+- 日用：来源可选，地区可多选；默认 `机场 + 自建`，地区默认 `新加坡`
+- AI：地区固定 `美国`，来源可选；默认 `机场 + 自建 + 备用`
+- 备用：启用 `备用` 来源后，保留整个备用订阅作为人工备用组
+- 某个来源停用后，相关 Provider 和策略引用不会出现在最终 Mihomo 配置中
 - 番茄 / 抖音 / 小红书：默认直连，可手动切换到全球代理策略
 - Apple CN / Microsoft CN / 中国大陆 / 局域网：直连
 - 所有代理策略均为手动选择，不使用 `url-test`、`fallback`、`load-balance` 或自动容灾
+
+配置生成器会记住“来源启用 / 日用来源 / 日用地区 / AI 来源”的选择，但不会把真实订阅 URL 保存到浏览器本地存储。
 
 ### Loon
 
 1. 打开“配置生成器”。
 2. 切换到 **Loon**。
 3. 可直接载入、复制或下载当前 `Primus-Loon.lcf`。
-4. 节点订阅继续在 Loon App 内以 `自建 / 机场-A / 备用` 三个资源名称维护。
+4. 节点订阅继续在 Loon App 内以 `机场 / 自建 / 备用` 三个资源名称维护。
 
 当前 Loon 配置文件：
 
 https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf
 
-Loon 与 Mihomo 保持相同的主要地区策略：日用使用自建及机场-A 新加坡，AI 仅使用美国节点。
+Loon 当前保持静态手动策略：日用使用自建及机场新加坡，AI 使用各来源中的美国节点。Mihomo 的“来源 + 地区”动态选择只在 Builder / primus-config 链路中生成。
 
 ## Mihomo 订阅后端
 
@@ -56,13 +61,18 @@ Mihomo 私有订阅由独立 Cloudflare Worker 提供：
 - 域名：`config.primusz.top`
 - 存储：Cloudflare KV
 - 模板：本仓库 `mihomo/template.yaml`
+- Worker 源码：本仓库 `cloudflare/primus-config.js`
 
-工作方式：配置生成器把三个上游订阅地址提交到 Worker，Worker 生成随机 token 并保存对应关系到 KV。客户端访问 `https://config.primusz.top/mihomo/<token>` 时，Worker 会读取仓库中的最新 Mihomo 模板并动态生成配置，因此已有 Primus 订阅链接可以自动使用后续更新后的模板。
+工作方式：配置生成器把已启用的上游订阅地址、日用来源、日用地区和 AI 来源提交到 Worker。Worker 生成随机 token 并保存到 KV。客户端访问 `https://config.primusz.top/mihomo/<token>` 时，Worker 会读取仓库中的最新 Mihomo 模板，并按该 token 保存的选择动态生成 Provider 与策略组。
+
+新版 Worker 向后兼容旧 KV 记录：旧 token 仍按旧生产默认值解析为“日用：自建 + 机场新加坡；AI：机场 + 自建 + 备用美国”，因此升级 Worker 不需要重建现有 token。
+
+如果上游订阅 URL 或地区 / 来源选择需要变化，目前仍采用重新生成订阅链接的方式获得新 token。
 
 ## 隐私与安全
 
-- 点击 **生成配置**：三个上游订阅地址仅在当前浏览器本地参与生成，不上传、不保存。
-- 点击 **生成订阅链接**：三个上游订阅地址会提交到 `config.primusz.top` 并保存到私有 KV，以便远程订阅持续工作。
+- 点击 **生成配置**：已启用的上游订阅地址仅在当前浏览器本地参与生成，不上传、不保存。
+- 点击 **生成订阅链接**：已启用的上游订阅地址及策略选择会提交到 `config.primusz.top` 并保存到私有 KV，以便远程订阅持续工作。
 - Primus 订阅 URL 中只暴露随机 token，但该 URL 本身等同于访问密钥；不要公开分享。
 - 上游真实订阅地址不写入 GitHub 仓库，也不写入 GitHub Actions。
 
