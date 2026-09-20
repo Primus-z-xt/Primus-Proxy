@@ -376,7 +376,7 @@ async function handleLoonPost(request, env) {
   await env.MIHOMO_KV.put(`loon:${token}`, JSON.stringify(config));
 
   return json({
-    config_url: `https://config.primusz.top/loon/${token}`
+    config_url: `https://config.primusz.top/loon/${token}/Primus-Loon.lcf`
   }, 200, origin);
 }
 
@@ -500,7 +500,7 @@ export default {
     const mihomoMatch = url.pathname.match(/^\/mihomo\/([A-Za-z0-9_-]+)$/);
     if (request.method === "GET" && mihomoMatch) return handleGet(mihomoMatch[1], env);
 
-    const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)$/);
+    const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)(?:\/Primus-Loon\.lcf)?$/);
     if (request.method === "GET" && loonMatch) return handleLoonGet(loonMatch[1], env);
 
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
