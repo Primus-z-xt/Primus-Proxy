@@ -8,11 +8,13 @@
   <style>
     :root { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     body { margin: 0; background: #f5f5f7; color: #111; }
-    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 18px 50px; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 28px 18px 50px; }
     h1 { margin: 0 0 6px; font-size: 30px; }
+    h3 { margin: 0 0 10px; font-size: 17px; }
     .sub { margin: 0 0 8px; color: #666; }
     .version-line { margin: 0 0 22px; color: #777; font-size: 13px; }
     .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 18px rgba(0,0,0,.06); margin-bottom: 16px; }
+    .subcard { border: 1px solid #e5e5ea; border-radius: 12px; padding: 14px; margin: 14px 0; }
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
     .tab, button { border: 0; border-radius: 10px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
     .tab { background: #e9e9ed; }
@@ -24,21 +26,35 @@
     .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
     button.primary { background: #111; color: #fff; }
     button.secondary { background: #e9e9ed; color: #111; }
+    button.mini { padding: 7px 10px; font-size: 13px; }
     button:disabled { cursor: not-allowed; opacity: .5; }
     .hint { font-size: 13px; color: #777; margin-top: 8px; line-height: 1.55; }
     .status { min-height: 20px; font-size: 13px; color: #666; }
     .hidden { display: none; }
-    .show-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; }
-    .show-row input { width: auto; }
+    .show-row, .check-item, .source-title { display: flex; align-items: center; gap: 8px; }
+    .show-row { margin-top: 10px; font-size: 14px; }
+    .show-row input, .check-item input, .source-title input { width: auto; }
     .subscription-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e5e5ea; }
+    .source-row { display: grid; grid-template-columns: 118px 1fr; gap: 10px; align-items: center; margin: 10px 0; }
+    .source-title { font-weight: 600; margin: 0; }
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 8px 12px; }
+    .check-item { font-weight: 500; margin: 0; padding: 7px 0; }
+    .group-title { font-size: 13px; color: #777; margin: 14px 0 4px; font-weight: 700; }
+    .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
+    .fixed { padding: 9px 11px; border-radius: 9px; background: #f2f2f7; font-weight: 600; display: inline-block; }
+    @media (max-width: 640px) {
+      .source-row { grid-template-columns: 1fr; gap: 2px; }
+    }
     @media (prefers-color-scheme: dark) {
       body { background: #111; color: #f5f5f7; }
       .card { background: #1c1c1e; box-shadow: none; }
-      .sub,.version-line,.hint,.status { color: #aaa; }
+      .subcard { border-color: #3a3a3c; }
+      .sub,.version-line,.hint,.status,.group-title { color: #aaa; }
       input,textarea { background: #2c2c2e; color: #fff; border-color: #444; }
       .tab,.secondary { background: #2c2c2e !important; color: #fff !important; }
       .tab.active,.primary { background: #fff !important; color: #111 !important; }
       .subscription-box { border-top-color: #3a3a3c; }
+      .fixed { background: #2c2c2e; }
     }
   </style>
 </head>
@@ -46,26 +62,63 @@
   <main class="wrap">
     <h1>Primus Proxy Config</h1>
     <p class="sub">Loon / Mihomo 配置统一入口</p>
-    <p class="version-line">Mihomo v1 · Loon v18</p>
+    <p class="version-line">Mihomo v2 · Loon v19</p>
 
     <section class="card">
       <div class="tabs">
-        <button class="tab active" data-tab="mihomo">Mihomo / Clash · v1</button>
-        <button class="tab" data-tab="loon">Loon · v18</button>
+        <button class="tab active" data-tab="mihomo">Mihomo / Clash · v2</button>
+        <button class="tab" data-tab="loon">Loon · v19</button>
       </div>
 
       <div id="mihomo-panel">
-        <label for="self-url">自建订阅</label>
-        <input id="self-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴自建 Clash / Mihomo 订阅链接">
+        <div class="subcard">
+          <h3>节点来源</h3>
+          <div class="source-row">
+            <label class="source-title"><input id="enable-airport" type="checkbox" checked>机场</label>
+            <input id="airport-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴机场 Clash / Mihomo 订阅链接">
+          </div>
+          <div class="source-row">
+            <label class="source-title"><input id="enable-self" type="checkbox" checked>自建</label>
+            <input id="self-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴自建 Clash / Mihomo 订阅链接">
+          </div>
+          <div class="source-row">
+            <label class="source-title"><input id="enable-backup" type="checkbox" checked>备用</label>
+            <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
+          </div>
+          <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
+          <p class="hint">取消某个来源后，该订阅链接可以留空；来源启用与策略组使用相互独立。选择状态会保存在当前浏览器，但订阅 URL 不会保存。</p>
+        </div>
 
-        <label for="airport-url">机场-A</label>
-        <input id="airport-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴机场-A Clash / Mihomo 订阅链接">
+        <div class="subcard">
+          <h3>🚀 日用节点</h3>
+          <div class="group-title">来源</div>
+          <div class="option-grid">
+            <label class="check-item"><input class="daily-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="daily-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
+          </div>
 
-        <label for="backup-url">备用</label>
-        <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
+          <div class="group-title">地区（可多选）</div>
+          <div class="inline-actions">
+            <button id="select-all-regions" type="button" class="secondary mini">全选</button>
+            <button id="clear-regions" type="button" class="secondary mini">清空</button>
+          </div>
+          <div id="region-options"></div>
+        </div>
 
-        <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
-        <p class="hint">“生成配置”只在当前浏览器本地处理；“生成订阅链接”会把三个上游地址提交到 Primus 配置后端并保存到 KV，用随机 token 生成私有订阅地址。</p>
+        <div class="subcard">
+          <h3>🤖 AI</h3>
+          <div class="group-title">地区</div>
+          <div class="fixed">🇺🇸 美国（固定）</div>
+          <div class="group-title">来源</div>
+          <div class="option-grid">
+            <label class="check-item"><input class="ai-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="ai-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>
+
+        <p class="hint">“生成配置”只在当前浏览器本地处理；“生成订阅链接”会把已启用的上游地址及策略选择提交到 Primus 配置后端并保存到 KV，用随机 token 生成私有订阅地址。</p>
 
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
@@ -86,7 +139,7 @@
       </div>
 
       <div id="loon-panel" class="hidden">
-        <p>当前读取仓库中的 Loon 生产配置。节点订阅仍按现有方式在 Loon App 内维护。</p>
+        <p>当前读取仓库中的 Loon 生产配置。节点订阅仍按现有方式在 Loon App 内维护，资源名称统一为“机场 / 自建 / 备用”。</p>
         <div class="actions">
           <button id="import-loon" class="primary">一键导入 Loon</button>
           <button id="load-loon" class="secondary">载入 Loon 配置</button>
@@ -101,216 +154,6 @@
     </section>
   </main>
 
-<script>
-  const MIHOMO_API = "https://config.primusz.top/api/mihomo";
-  const LOON_RAW_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/Primus-Loon.lcf";
-  const LOON_IMPORT_URL = "https://www.nsloon.com/openloon/import?sub=" + encodeURIComponent(LOON_RAW_URL);
-
-  let mihomoTemplate = "";
-  let loonConfig = "";
-  let currentSubscriptionUrl = "";
-
-  const output = document.getElementById("output");
-  const status = document.getElementById("status");
-  const subscriptionUrlInput = document.getElementById("subscription-url");
-  const createSubscriptionButton = document.getElementById("create-subscription");
-  const copySubscriptionButton = document.getElementById("copy-subscription");
-  const importClashButton = document.getElementById("import-clash");
-
-  async function loadAssets() {
-    try {
-      const [m, l] = await Promise.all([
-        fetch("./template.yaml", { cache: "no-store" }),
-        fetch("./Primus-Loon.lcf", { cache: "no-store" })
-      ]);
-      if (!m.ok || !l.ok) throw new Error("配置模板载入失败");
-      mihomoTemplate = await m.text();
-      loonConfig = await l.text();
-      status.textContent = "模板已载入";
-    } catch (e) {
-      status.textContent = e.message;
-    }
-  }
-
-  function yamlEscape(value) {
-    return value.trim().replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  }
-
-  function validUrl(value) {
-    try {
-      const u = new URL(value.trim());
-      return u.protocol === "https:" || u.protocol === "http:";
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function getSourceUrls() {
-    return {
-      self: document.getElementById("self-url").value.trim(),
-      airport: document.getElementById("airport-url").value.trim(),
-      backup: document.getElementById("backup-url").value.trim()
-    };
-  }
-
-  function validateSourceUrls() {
-    const urls = getSourceUrls();
-    if (![urls.self, urls.airport, urls.backup].every(validUrl)) {
-      status.textContent = "请完整填写 3 个有效的 http/https 订阅链接";
-      return null;
-    }
-    return urls;
-  }
-
-  function generateMihomo() {
-    const urls = validateSourceUrls();
-    if (!urls) return;
-
-    if (!mihomoTemplate) {
-      status.textContent = "模板尚未载入";
-      return;
-    }
-
-    output.value = mihomoTemplate
-      .replaceAll("__SELF_URL__", yamlEscape(urls.self))
-      .replaceAll("__AIRPORT_A_URL__", yamlEscape(urls.airport))
-      .replaceAll("__BACKUP_URL__", yamlEscape(urls.backup));
-    status.textContent = "Mihomo / Clash 配置已生成";
-  }
-
-  async function createSubscription() {
-    const urls = validateSourceUrls();
-    if (!urls) return;
-
-    createSubscriptionButton.disabled = true;
-    copySubscriptionButton.disabled = true;
-    importClashButton.disabled = true;
-    status.textContent = "正在生成 Primus 订阅链接…";
-
-    try {
-      const response = await fetch(MIHOMO_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          self_url: urls.self,
-          airport_a_url: urls.airport,
-          backup_url: urls.backup
-        })
-      });
-
-      let data = {};
-      try {
-        data = await response.json();
-      } catch (_) {}
-
-      if (!response.ok) {
-        throw new Error(data.error || `后端请求失败 (${response.status})`);
-      }
-
-      if (!validUrl(data.subscription_url || "")) {
-        throw new Error("后端未返回有效订阅链接");
-      }
-
-      currentSubscriptionUrl = data.subscription_url;
-      subscriptionUrlInput.value = currentSubscriptionUrl;
-      copySubscriptionButton.disabled = false;
-      importClashButton.disabled = false;
-      status.textContent = "Primus 订阅链接已生成";
-    } catch (e) {
-      currentSubscriptionUrl = "";
-      subscriptionUrlInput.value = "";
-      status.textContent = `生成订阅链接失败：${e.message}`;
-    } finally {
-      createSubscriptionButton.disabled = false;
-    }
-  }
-
-  async function copyText(text, ok) {
-    if (!text) {
-      status.textContent = "当前没有可复制的内容";
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      status.textContent = ok;
-    } catch (_) {
-      const temp = document.createElement("textarea");
-      temp.value = text;
-      temp.style.position = "fixed";
-      temp.style.opacity = "0";
-      document.body.appendChild(temp);
-      temp.focus();
-      temp.select();
-      document.execCommand("copy");
-      temp.remove();
-      status.textContent = ok;
-    }
-  }
-
-  function downloadText(text, filename) {
-    if (!text) {
-      status.textContent = "当前没有可下载的配置";
-      return;
-    }
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function importClashVerge() {
-    if (!currentSubscriptionUrl) {
-      status.textContent = "请先生成订阅链接";
-      return;
-    }
-    const scheme = `clash://install-config?url=${encodeURIComponent(currentSubscriptionUrl)}`;
-    status.textContent = "正在唤起 Clash Verge Rev…";
-    window.location.href = scheme;
-  }
-
-  function importLoon() {
-    status.textContent = "正在打开 Loon 一键导入…";
-    window.location.href = LOON_IMPORT_URL;
-  }
-
-  document.getElementById("generate").addEventListener("click", generateMihomo);
-  document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
-  document.getElementById("download").addEventListener("click", () => downloadText(output.value, "Primus-Mihomo.yaml"));
-
-  createSubscriptionButton.addEventListener("click", createSubscription);
-  copySubscriptionButton.addEventListener("click", () => copyText(currentSubscriptionUrl, "订阅链接已复制"));
-  importClashButton.addEventListener("click", importClashVerge);
-
-  document.getElementById("import-loon").addEventListener("click", importLoon);
-  document.getElementById("load-loon").addEventListener("click", () => {
-    output.value = loonConfig;
-    status.textContent = loonConfig ? "Loon 配置已载入" : "Loon 配置尚未载入";
-  });
-  document.getElementById("copy-loon").addEventListener("click", () => copyText(loonConfig, "Loon 配置已复制"));
-  document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, "Primus-Loon.lcf"));
-
-  document.getElementById("show-urls").addEventListener("change", (e) => {
-    ["self-url", "airport-url", "backup-url"].forEach(id => {
-      document.getElementById(id).type = e.target.checked ? "text" : "password";
-    });
-  });
-
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-      btn.classList.add("active");
-      const isMihomo = btn.dataset.tab === "mihomo";
-      document.getElementById("mihomo-panel").classList.toggle("hidden", !isMihomo);
-      document.getElementById("loon-panel").classList.toggle("hidden", isMihomo);
-      output.value = "";
-      status.textContent = isMihomo ? "Mihomo / Clash" : "Loon";
-    });
-  });
-
-  loadAssets();
-</script>
+<script src="./app.js"></script>
 </body>
 </html>
