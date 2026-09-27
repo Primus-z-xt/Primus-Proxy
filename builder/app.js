@@ -190,44 +190,40 @@
     return `${SOURCE_META[sourceKey].label} · ${REGIONS[regionCode].label}`;
   }
 
-  function buildProviders(config) {
-    const needed = new Map();
-    for (const sourceKey of config.daily_sources) {
-      for (const regionCode of config.daily_regions) needed.set(`${sourceKey}:${regionCode}`, [sourceKey, regionCode]);
-    }
-    for (const sourceKey of config.ai_sources) needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
 
+  function combinedRegionRegex(codes) {
+    const parts = codes
+      .map(code => REGIONS[code]?.regex || "")
+      .filter(Boolean)
+      .map(pattern => pattern.replace(/^\(\?i\)/, ""));
+    return `(?i)(${parts.join("|")})`;
+  }
+
+  function buildProviders(config) {
     const lines = [];
     for (const sourceKey of SOURCE_ORDER) {
       if (!config.sources[sourceKey].enabled) continue;
-      if (sourceKey === "backup") {
-        lines.push(`  备用:`, `    type: http`, `    url: "${yamlEscape(config.sources.backup.url)}"`, `    path: ${providerCachePath("backup", "all", config.sources.backup.url)}`, `    interval: 600`, `    exclude-filter: '${BACKUP_EXCLUDE}'`, ``);
-      }
-      for (const regionCode of Object.keys(REGIONS)) {
-        if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
-        const region = REGIONS[regionCode];
-        lines.push(
-          `  ${providerName(sourceKey, regionCode)}:`,
-          `    type: http`,
-          `    url: "${yamlEscape(config.sources[sourceKey].url)}"`,
-          `    path: ${providerCachePath(sourceKey, regionCode, config.sources[sourceKey].url)}`,
-          `    interval: 600`,
-          `    filter: '${region.regex}'`
-        );
-        if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
-        lines.push("");
-      }
+      const meta = SOURCE_META[sourceKey];
+      lines.push(
+        `  ${meta.label}:`,
+        `    type: http`,
+        `    url: "${yamlEscape(config.sources[sourceKey].url)}"`,
+        `    path: ${providerCachePath(sourceKey, "all", config.sources[sourceKey].url)}`,
+        `    interval: 600`
+      );
+      if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+      lines.push("");
     }
     return lines.join("\n").trimEnd();
   }
 
   function buildGroups(config) {
-    const dailyProviders = [];
-    for (const sourceKey of config.daily_sources) {
-      for (const regionCode of config.daily_regions) dailyProviders.push(providerName(sourceKey, regionCode));
-    }
-    const aiProviders = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
+    const dailyProviders = config.daily_sources.map(key => SOURCE_META[key].label);
+    const aiProviders = config.ai_sources.map(key => SOURCE_META[key].label);
     const hasBackup = config.sources.backup.enabled;
+    const dailyFilter = combinedRegionRegex(config.daily_regions);
+    const aiFilter = REGIONS.US.regex;
+
     const lines = [
       `  - name: "🌐 全球代理策略"`,
       `    type: select`,
@@ -235,11 +231,35 @@
       `      - "🚀 日用节点"`
     ];
     if (hasBackup) lines.push(`      - "🛟 备用节点"`);
-    lines.push(``, `  - name: "🚀 日用节点"`, `    type: select`, `    use:`);
+
+    lines.push(
+      ``,
+      `  - name: "🚀 日用节点"`,
+      `    type: select`,
+      `    use:`
+    );
     for (const name of dailyProviders) lines.push(`      - "${name}"`);
-    if (hasBackup) lines.push(``, `  - name: "🛟 备用节点"`, `    type: select`, `    use:`, `      - 备用`);
-    lines.push(``, `  - name: "🤖 AI"`, `    type: select`, `    use:`);
+    lines.push(`    filter: '${dailyFilter}'`);
+
+    if (hasBackup) {
+      lines.push(
+        ``,
+        `  - name: "🛟 备用节点"`,
+        `    type: select`,
+        `    use:`,
+        `      - "备用"`
+      );
+    }
+
+    lines.push(
+      ``,
+      `  - name: "🤖 AI"`,
+      `    type: select`,
+      `    use:`
+    );
     for (const name of aiProviders) lines.push(`      - "${name}"`);
+    lines.push(`    filter: '${aiFilter}'`);
+
     lines.push(
       ``, `  - name: "🍅 番茄"`, `    type: select`, `    proxies:`, `      - DIRECT`, `      - "🌐 全球代理策略"`,
       ``, `  - name: "🎵 抖音"`, `    type: select`, `    proxies:`, `      - DIRECT`, `      - "🌐 全球代理策略"`,
