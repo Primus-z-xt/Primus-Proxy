@@ -65,6 +65,20 @@ function yamlEscape(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function shortHash(value) {
+  let hash = 2166136261;
+  const text = String(value || "");
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function providerCachePath(sourceKey, regionCode, url) {
+  return `./proxy_provider/${SOURCE_META[sourceKey].path}-${shortHash(url)}-${String(regionCode || "all").toLowerCase()}.yaml`;
+}
+
 function uniqueAllowed(values, allowed) {
   const result = [];
   for (const value of Array.isArray(values) ? values : []) {
@@ -149,7 +163,7 @@ function buildProviders(config) {
       `  自建:`,
       `    type: http`,
       `    url: "${yamlEscape(config.sources.self.url)}"`,
-      `    path: ./proxy_provider/self.yaml`,
+      `    path: ${providerCachePath("self", "all", config.sources.self.url)}`,
       `    interval: 600`,
       ``
     );
@@ -158,7 +172,7 @@ function buildProviders(config) {
   for (const sourceKey of SOURCE_ORDER) {
     if (!config.sources[sourceKey]?.enabled) continue;
     if (sourceKey === "backup") {
-      lines.push(`  备用:`, `    type: http`, `    url: "${yamlEscape(config.sources.backup.url)}"`, `    path: ./proxy_provider/backup.yaml`, `    interval: 600`, `    exclude-filter: '${BACKUP_EXCLUDE}'`, ``);
+      lines.push(`  备用:`, `    type: http`, `    url: "${yamlEscape(config.sources.backup.url)}"`, `    path: ${providerCachePath("backup", "all", config.sources.backup.url)}`, `    interval: 600`, `    exclude-filter: '${BACKUP_EXCLUDE}'`, ``);
     }
     for (const regionCode of Object.keys(REGIONS)) {
       if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
@@ -167,7 +181,7 @@ function buildProviders(config) {
         `  ${providerName(sourceKey, regionCode)}:`,
         `    type: http`,
         `    url: "${yamlEscape(config.sources[sourceKey].url)}"`,
-        `    path: ./proxy_provider/${SOURCE_META[sourceKey].path}-${regionCode.toLowerCase()}.yaml`,
+        `    path: ${providerCachePath(sourceKey, regionCode, config.sources[sourceKey].url)}`,
         `    interval: 600`,
         `    filter: '${region.regex}'`
       );
