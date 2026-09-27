@@ -56,11 +56,8 @@
   const importClashButton = document.getElementById("import-clash");
   const importLoonButton = document.getElementById("import-loon");
 
-  function twemojiFlagUrl(code) {
-    const hex = [...String(code).toUpperCase()]
-      .map(char => (127397 + char.charCodeAt(0)).toString(16))
-      .join("-");
-    return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${hex}.svg`;
+  function flagSvgUrl(code) {
+    return `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/flags/4x3/${String(code).toLowerCase()}.svg`;
   }
 
   function appendRegionLabel(label, input, code) {
@@ -85,7 +82,7 @@
       const img = document.createElement("img");
       img.className = "region-flag-img";
       img.alt = emoji;
-      img.src = twemojiFlagUrl(flag.dataset.code);
+      img.src = flagSvgUrl(flag.dataset.code);
       img.decoding = "async";
       img.loading = "lazy";
       img.addEventListener("error", () => {
