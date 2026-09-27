@@ -47,6 +47,7 @@
   let loonConfig = "";
   let loonGeneratedFingerprint = "";
   let currentSubscriptionUrl = "";
+  let versionManifest = null;
 
   const output = document.getElementById("output");
   const status = document.getElementById("status");
@@ -147,15 +148,44 @@
     }
   }
 
+  function normalizeVersionManifest(data) {
+    const normalize = (key) => {
+      const value = data?.[key];
+      const version = Number(value?.version);
+      const updatedAt = String(value?.updated_at || "").trim();
+      if (!Number.isInteger(version) || version < 1 || !updatedAt) {
+        throw new Error(`VERSION.json 中的 ${key} 版本信息无效`);
+      }
+      return { version, updated_at: updatedAt };
+    };
+    return { mihomo: normalize("mihomo"), loon: normalize("loon") };
+  }
+
+  function applyVersionMetadata(template, product) {
+    const meta = versionManifest?.[product];
+    if (!meta) return template;
+    return template
+      .replace(/^# 版本：v.*$/m, `# 版本：v${meta.version}`)
+      .replace(/^# 更新日期：.*$/m, `# 更新日期：${meta.updated_at}`);
+  }
+
+  function updateVersionBadges() {
+    document.getElementById("mihomo-version").textContent = `v${versionManifest.mihomo.version}`;
+    document.getElementById("loon-version").textContent = `v${versionManifest.loon.version}`;
+  }
+
   async function loadAssets() {
     try {
-      const [m, l] = await Promise.all([
+      const [m, l, v] = await Promise.all([
         fetch("./template.yaml", { cache: "no-store" }),
-        fetch("./Loon-template.lcf", { cache: "no-store" })
+        fetch("./Loon-template.lcf", { cache: "no-store" }),
+        fetch("./VERSION.json", { cache: "no-store" })
       ]);
-      if (!m.ok || !l.ok) throw new Error("配置模板载入失败");
-      mihomoTemplate = await m.text();
-      loonTemplate = await l.text();
+      if (!m.ok || !l.ok || !v.ok) throw new Error("配置资源载入失败");
+      versionManifest = normalizeVersionManifest(await v.json());
+      mihomoTemplate = applyVersionMetadata(await m.text(), "mihomo");
+      loonTemplate = applyVersionMetadata(await l.text(), "loon");
+      updateVersionBadges();
       status.textContent = "模板已载入";
     } catch (e) {
       status.textContent = e.message;
