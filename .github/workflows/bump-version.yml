@@ -1,0 +1,75 @@
+name: Bump Config Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which configuration version to bump"
+        required: true
+        type: choice
+        options:
+          - mihomo
+          - loon
+          - both
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bump VERSION.json and sync fallback headers
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from datetime import datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          target = os.environ["TARGET"]
+          version_path = Path("VERSION.json")
+          data = json.loads(version_path.read_text(encoding="utf-8"))
+          now = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+
+          targets = ["mihomo", "loon"] if target == "both" else [target]
+          for key in targets:
+              data[key]["version"] = int(data[key]["version"]) + 1
+              data[key]["updated_at"] = now
+
+          version_path.write_text(
+              json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+
+          def sync_header(path, key):
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              meta = data[key]
+              text = re.sub(r"^# 版本：v.*$", f"# 版本：v{meta['version']}", text, flags=re.M)
+              text = re.sub(r"^# 更新日期：.*$", f"# 更新日期：{meta['updated_at']}", text, flags=re.M)
+              p.write_text(text, encoding="utf-8")
+
+          sync_header("mihomo/template.yaml", "mihomo")
+          sync_header("loon/template.lcf", "loon")
+          sync_header("loon/Primus-Loon.lcf", "loon")
+          PY
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION.json mihomo/template.yaml loon/template.lcf loon/Primus-Loon.lcf
+          if git diff --cached --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+          git commit -m "Bump ${{ inputs.target }} config version"
+          git push
