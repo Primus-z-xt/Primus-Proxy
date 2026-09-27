@@ -56,6 +56,55 @@
   const importClashButton = document.getElementById("import-clash");
   const importLoonButton = document.getElementById("import-loon");
 
+  function isWindowsPlatform() {
+    const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || "";
+    return /Windows|Win32|Win64/i.test(platform);
+  }
+
+  function twemojiFlagUrl(code) {
+    const hex = [...String(code).toUpperCase()]
+      .map(char => (127397 + char.charCodeAt(0)).toString(16))
+      .join("-");
+    return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${hex}.svg`;
+  }
+
+  function appendRegionLabel(label, input, code) {
+    const region = REGIONS[code];
+    const flag = document.createElement("span");
+    flag.className = "region-flag";
+    flag.dataset.code = code;
+    flag.dataset.emoji = region.flag;
+    flag.textContent = region.flag;
+
+    const name = document.createElement("span");
+    name.className = "region-name";
+    name.textContent = region.label;
+
+    label.append(input, flag, name);
+  }
+
+  function upgradeWindowsFlags() {
+    if (!isWindowsPlatform()) return;
+
+    document.querySelectorAll(".region-flag[data-code]").forEach(flag => {
+      if (flag.dataset.rendered === "svg") return;
+      const emoji = flag.dataset.emoji || flag.textContent || "";
+      const img = document.createElement("img");
+      img.className = "region-flag-img";
+      img.alt = emoji;
+      img.src = twemojiFlagUrl(flag.dataset.code);
+      img.decoding = "async";
+      img.loading = "lazy";
+      img.addEventListener("error", () => {
+        flag.textContent = emoji;
+        flag.dataset.rendered = "emoji";
+      }, { once: true });
+      flag.textContent = "";
+      flag.appendChild(img);
+      flag.dataset.rendered = "svg";
+    });
+  }
+
   function renderLoonRegionOptions() {
     const root = document.getElementById("loon-region-options");
     root.innerHTML = "";
@@ -65,7 +114,7 @@
       title.textContent = group.title;
       root.appendChild(title);
       const grid = document.createElement("div");
-      grid.className = "option-grid";
+      grid.className = "option-grid region-grid";
       for (const code of group.codes) {
         const region = REGIONS[code];
         const label = document.createElement("label");
@@ -75,7 +124,7 @@
         input.className = "loon-daily-region";
         input.dataset.region = code;
         input.checked = code === "SG";
-        label.append(input, document.createTextNode(`${region.flag} ${region.label}`));
+        appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
       root.appendChild(grid);
@@ -91,7 +140,7 @@
       title.textContent = group.title;
       root.appendChild(title);
       const grid = document.createElement("div");
-      grid.className = "option-grid";
+      grid.className = "option-grid region-grid";
       for (const code of group.codes) {
         const region = REGIONS[code];
         const label = document.createElement("label");
@@ -101,7 +150,7 @@
         input.className = "daily-region";
         input.dataset.region = code;
         input.checked = code === "SG";
-        label.append(input, document.createTextNode(`${region.flag} ${region.label}`));
+        appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
       root.appendChild(grid);
@@ -571,6 +620,7 @@
 
   renderRegionOptions();
   renderLoonRegionOptions();
+  upgradeWindowsFlags();
   restoreSelections();
   restoreLoonSelections();
   syncSourceUi();
