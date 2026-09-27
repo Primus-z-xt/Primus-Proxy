@@ -152,10 +152,23 @@
     .show-row { width: fit-content; margin: 11px 0 0; font-size: 13px; color: var(--muted); }
     .hint { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.65; }
     .group-title { margin: 15px 0 8px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    .option-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(118px,1fr)); gap: 8px; }
+    .option-grid { display: grid; gap: 8px; }
+    .source-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .region-grid { grid-template-columns: repeat(6,minmax(0,1fr)); }
+    .region-grid .check-item { min-width: 0; white-space: nowrap; }
+    .region-flag {
+      width: 20px; min-width: 20px; height: 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 17px; line-height: 1;
+    }
+    .region-flag-img {
+      width: 20px; height: 15px; display: block; object-fit: cover;
+      border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.06);
+    }
+    .region-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .check-item {
       margin: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px;
-      background: rgba(255,255,255,.55); font-size: 13px; font-weight: 650;
+      min-height: 44px; background: rgba(255,255,255,.55); font-size: 13px; font-weight: 650;
       transition: .16s ease; cursor: pointer;
     }
     .check-item:has(input:checked) {
@@ -193,6 +206,12 @@
       display: flex; gap: 8px; align-items: flex-start;
       margin: 13px 2px 0; color: var(--muted); font-size: 11.5px; line-height: 1.55;
     }
+    @media (max-width: 1199px) and (min-width: 801px) {
+      .region-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+    }
+    @media (max-width: 800px) {
+      .region-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
     @media (max-width: 700px) {
       .wrap { width: min(100% - 20px,1040px); padding-top: 18px; }
       .hero { align-items: flex-start; flex-direction: column; margin-bottom: 15px; }
@@ -203,6 +222,11 @@
       .source-row { grid-template-columns: 1fr; gap: 4px; }
       .actions button { flex: 1 1 160px; }
       textarea { min-height: 320px; }
+    }
+    @media (max-width: 420px) {
+      .region-grid { grid-template-columns: 1fr; }
+      .source-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .check-item { padding-left: 9px; padding-right: 9px; }
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -264,7 +288,7 @@
         <div class="subcard">
           <h3>🚀 日用节点</h3>
           <div class="group-title">来源</div>
-          <div class="option-grid">
+          <div class="option-grid source-grid">
             <label class="check-item"><input class="daily-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input class="daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
@@ -280,9 +304,9 @@
         <div class="subcard">
           <h3>🤖 AI</h3>
           <div class="group-title">地区</div>
-          <div class="fixed">🇺🇸 美国 · 固定</div>
+          <div class="fixed"><span class="region-flag" data-code="US" data-emoji="🇺🇸">🇺🇸</span><span>美国 · 固定</span></div>
           <div class="group-title">来源</div>
-          <div class="option-grid">
+          <div class="option-grid source-grid">
             <label class="check-item"><input class="ai-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input class="ai-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox" checked>备用</label>
@@ -318,7 +342,7 @@
 
         <div class="subcard">
           <h3>节点来源</h3>
-          <div class="option-grid">
+          <div class="option-grid source-grid">
             <label class="check-item"><input id="loon-enable-airport" class="loon-enabled-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input id="loon-enable-self" class="loon-enabled-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input id="loon-enable-backup" class="loon-enabled-source" data-source="backup" type="checkbox" checked>备用</label>
@@ -328,7 +352,7 @@
         <div class="subcard">
           <h3>🚀 日用节点</h3>
           <div class="group-title">来源</div>
-          <div class="option-grid">
+          <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-daily-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
@@ -344,9 +368,9 @@
         <div class="subcard">
           <h3>🤖 AI</h3>
           <div class="group-title">地区</div>
-          <div class="fixed">🇺🇸 美国 · 固定</div>
+          <div class="fixed"><span class="region-flag" data-code="US" data-emoji="🇺🇸">🇺🇸</span><span>美国 · 固定</span></div>
           <div class="group-title">来源</div>
-          <div class="option-grid">
+          <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-ai-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox" checked>备用</label>
