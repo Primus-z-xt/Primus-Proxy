@@ -56,11 +56,6 @@
   const importClashButton = document.getElementById("import-clash");
   const importLoonButton = document.getElementById("import-loon");
 
-  function isWindowsPlatform() {
-    const platform = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || "";
-    return /Windows|Win32|Win64/i.test(platform);
-  }
-
   function twemojiFlagUrl(code) {
     const hex = [...String(code).toUpperCase()]
       .map(char => (127397 + char.charCodeAt(0)).toString(16))
@@ -83,9 +78,7 @@
     label.append(input, flag, name);
   }
 
-  function upgradeWindowsFlags() {
-    if (!isWindowsPlatform()) return;
-
+  function upgradeFlagImages() {
     document.querySelectorAll(".region-flag[data-code]").forEach(flag => {
       if (flag.dataset.rendered === "svg") return;
       const emoji = flag.dataset.emoji || flag.textContent || "";
@@ -620,7 +613,7 @@
 
   renderRegionOptions();
   renderLoonRegionOptions();
-  upgradeWindowsFlags();
+  upgradeFlagImages();
   restoreSelections();
   restoreLoonSelections();
   syncSourceUi();
