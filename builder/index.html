@@ -4,73 +4,245 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#6d5dfc">
   <title>Primus Proxy Config</title>
   <style>
-    :root { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-    body { margin: 0; background: #f5f5f7; color: #111; }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 28px 18px 50px; }
-    h1 { margin: 0 0 6px; font-size: 30px; }
-    h3 { margin: 0 0 10px; font-size: 17px; }
-    .sub { margin: 0 0 8px; color: #666; }
-    .version-line { margin: 0 0 22px; color: #777; font-size: 13px; }
-    .card { background: #fff; border-radius: 16px; padding: 18px; box-shadow: 0 2px 18px rgba(0,0,0,.06); margin-bottom: 16px; }
-    .subcard { border: 1px solid #e5e5ea; border-radius: 12px; padding: 14px; margin: 14px 0; }
-    .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
-    .tab, button { border: 0; border-radius: 10px; padding: 10px 14px; font-size: 15px; cursor: pointer; }
-    .tab { background: #e9e9ed; }
-    .tab.active { background: #111; color: #fff; }
-    label { display: block; font-weight: 600; margin: 12px 0 6px; }
-    input, textarea { box-sizing: border-box; width: 100%; border: 1px solid #d2d2d7; border-radius: 10px; background: #fff; color: #111; font: inherit; }
-    input { padding: 11px 12px; }
-    textarea { min-height: 460px; padding: 13px; font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size: 13px; line-height: 1.5; resize: vertical; }
-    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-    button.primary { background: #111; color: #fff; }
-    button.secondary { background: #e9e9ed; color: #111; }
-    button.mini { padding: 7px 10px; font-size: 13px; }
-    button:disabled { cursor: not-allowed; opacity: .5; }
-    .hint { font-size: 13px; color: #777; margin-top: 8px; line-height: 1.55; }
-    .status { min-height: 20px; font-size: 13px; color: #666; }
-    .hidden { display: none; }
-    .show-row, .check-item, .source-title { display: flex; align-items: center; gap: 8px; }
-    .show-row { margin-top: 10px; font-size: 14px; }
-    .show-row input, .check-item input, .source-title input { width: auto; }
-    .subscription-box { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e5e5ea; }
-    .source-row { display: grid; grid-template-columns: 118px 1fr; gap: 10px; align-items: center; margin: 10px 0; }
-    .source-title { font-weight: 600; margin: 0; }
-    .option-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 8px 12px; }
-    .check-item { font-weight: 500; margin: 0; padding: 7px 0; }
-    .group-title { font-size: 13px; color: #777; margin: 14px 0 4px; font-weight: 700; }
-    .inline-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 2px; }
-    .fixed { padding: 9px 11px; border-radius: 9px; background: #f2f2f7; font-weight: 600; display: inline-block; }
-    @media (max-width: 640px) {
-      .source-row { grid-template-columns: 1fr; gap: 2px; }
+    :root {
+      font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      color-scheme: light dark;
+      --bg: #f4f6fb;
+      --surface: rgba(255,255,255,.88);
+      --surface-strong: #fff;
+      --surface-soft: #f7f7fb;
+      --text: #16171d;
+      --muted: #6f7280;
+      --line: rgba(19,22,32,.09);
+      --accent: #6957f5;
+      --accent-2: #8d65ff;
+      --accent-soft: rgba(105,87,245,.10);
+      --success: #15966d;
+      --shadow: 0 18px 55px rgba(35,34,70,.09);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 14% -5%, rgba(122,97,255,.22), transparent 31rem),
+        radial-gradient(circle at 92% 6%, rgba(71,167,255,.16), transparent 28rem),
+        linear-gradient(180deg,#fafbff 0%,var(--bg) 48%,#f6f7fb 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .24;
+      background-image: linear-gradient(rgba(80,75,130,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(80,75,130,.035) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+    button,input,textarea { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .wrap { width: min(1040px, calc(100% - 30px)); margin: 0 auto; padding: 34px 0 64px; position: relative; z-index: 1; }
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 2px 4px 22px;
+    }
+    .brand { display: flex; align-items: center; gap: 15px; }
+    .brand-mark {
+      width: 52px; height: 52px; border-radius: 17px;
+      display: grid; place-items: center;
+      color: white; font-size: 22px; font-weight: 800; letter-spacing: -.04em;
+      background: linear-gradient(145deg,var(--accent),var(--accent-2));
+      box-shadow: 0 12px 30px rgba(105,87,245,.28), inset 0 1px rgba(255,255,255,.3);
+    }
+    h1 { margin: 0; font-size: clamp(28px,4vw,38px); line-height: 1.08; letter-spacing: -.035em; }
+    .sub { margin: 7px 0 0; color: var(--muted); font-size: 14px; }
+    .version-stack { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .version-badge {
+      padding: 8px 11px; border: 1px solid var(--line); border-radius: 999px;
+      background: rgba(255,255,255,.65); backdrop-filter: blur(12px);
+      color: var(--muted); font-size: 12px; font-weight: 700;
+    }
+    .version-badge strong { color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.68);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+    .tabs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      padding: 5px; margin-bottom: 18px;
+      border-radius: 16px; background: rgba(107,106,130,.08);
+      border: 1px solid var(--line);
+    }
+    .tab, button {
+      border: 0; border-radius: 11px; padding: 11px 15px; cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease, opacity .16s ease;
+    }
+    .tab { background: transparent; color: var(--muted); font-weight: 700; }
+    .tab.active {
+      color: var(--text); background: var(--surface-strong);
+      box-shadow: 0 5px 18px rgba(30,31,50,.08);
+    }
+    button:hover:not(:disabled) { transform: translateY(-1px); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { cursor: not-allowed; opacity: .42; }
+    button.primary {
+      color: #fff; font-weight: 750;
+      background: linear-gradient(135deg,var(--accent),var(--accent-2));
+      box-shadow: 0 8px 22px rgba(105,87,245,.20);
+    }
+    button.secondary {
+      color: var(--text); font-weight: 650;
+      border: 1px solid var(--line); background: var(--surface-strong);
+    }
+    button.mini { padding: 7px 10px; font-size: 12px; border-radius: 9px; }
+    .panel { animation: enter .22s ease; }
+    @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    .subcard {
+      position: relative; overflow: hidden;
+      border: 1px solid var(--line); border-radius: 18px;
+      padding: 17px; margin: 13px 0;
+      background: linear-gradient(180deg,rgba(255,255,255,.68),rgba(255,255,255,.45));
+    }
+    .subcard::after {
+      content: ""; position: absolute; inset: 0 auto auto 0; width: 72px; height: 2px;
+      background: linear-gradient(90deg,var(--accent),transparent);
+    }
+    h3 { margin: 0 0 12px; font-size: 16px; letter-spacing: -.012em; }
+    label { display: block; font-weight: 650; margin: 12px 0 6px; }
+    input, textarea {
+      width: 100%; border: 1px solid var(--line); color: var(--text);
+      background: rgba(255,255,255,.86);
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    input { padding: 11px 13px; border-radius: 11px; }
+    input:focus, textarea:focus {
+      border-color: rgba(105,87,245,.55);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+      background: var(--surface-strong);
+    }
+    input:disabled { opacity: .46; }
+    textarea {
+      min-height: 390px; padding: 15px; border-radius: 16px;
+      font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size: 12.5px; line-height: 1.58; resize: vertical;
+      background: #11131a; color: #dfe4f2; border-color: rgba(255,255,255,.06);
+    }
+    textarea:focus { background: #11131a; color: #dfe4f2; }
+    .source-row {
+      display: grid; grid-template-columns: 118px 1fr; gap: 11px;
+      align-items: center; margin: 10px 0;
+    }
+    .source-title,.show-row,.check-item { display: flex; align-items: center; gap: 8px; }
+    .source-title { margin: 0; }
+    .source-title input,.show-row input,.check-item input { width: auto; accent-color: var(--accent); }
+    .show-row { width: fit-content; margin: 11px 0 0; font-size: 13px; color: var(--muted); }
+    .hint { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.65; }
+    .group-title { margin: 15px 0 8px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(118px,1fr)); gap: 8px; }
+    .check-item {
+      margin: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px;
+      background: rgba(255,255,255,.55); font-size: 13px; font-weight: 650;
+      transition: .16s ease; cursor: pointer;
+    }
+    .check-item:has(input:checked) {
+      color: var(--accent); border-color: rgba(105,87,245,.25);
+      background: var(--accent-soft);
+    }
+    .check-item:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+    .inline-actions,.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .inline-actions { margin: 6px 0 8px; }
+    .actions { margin: 15px 0; }
+    .fixed {
+      display: inline-flex; align-items: center;
+      padding: 9px 12px; border: 1px solid rgba(105,87,245,.18);
+      border-radius: 11px; color: var(--accent); background: var(--accent-soft); font-size: 13px; font-weight: 700;
+    }
+    .subscription-box {
+      margin-top: 16px; padding: 17px;
+      border: 1px solid rgba(105,87,245,.14);
+      border-radius: 18px; background: linear-gradient(145deg,rgba(105,87,245,.07),rgba(71,167,255,.045));
+    }
+    .subscription-box .actions { margin-top: 0; }
+    .status-wrap {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin: 18px 2px 8px;
+    }
+    .preview-title { font-size: 12px; color: var(--muted); font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .status {
+      min-height: 24px; display: inline-flex; align-items: center;
+      padding: 5px 9px; border-radius: 999px;
+      color: var(--success); background: rgba(21,150,109,.08);
+      font-size: 11px; font-weight: 700;
+    }
+    .hidden { display: none !important; }
+    .privacy-note {
+      display: flex; gap: 8px; align-items: flex-start;
+      margin: 13px 2px 0; color: var(--muted); font-size: 11.5px; line-height: 1.55;
+    }
+    @media (max-width: 700px) {
+      .wrap { width: min(100% - 20px,1040px); padding-top: 18px; }
+      .hero { align-items: flex-start; flex-direction: column; margin-bottom: 15px; }
+      .version-stack { justify-content: flex-start; }
+      .brand-mark { width: 46px; height: 46px; border-radius: 14px; }
+      .card { padding: 12px; border-radius: 22px; }
+      .subcard,.subscription-box { padding: 14px; border-radius: 15px; }
+      .source-row { grid-template-columns: 1fr; gap: 4px; }
+      .actions button { flex: 1 1 160px; }
+      textarea { min-height: 320px; }
     }
     @media (prefers-color-scheme: dark) {
-      body { background: #111; color: #f5f5f7; }
-      .card { background: #1c1c1e; box-shadow: none; }
-      .subcard { border-color: #3a3a3c; }
-      .sub,.version-line,.hint,.status,.group-title { color: #aaa; }
-      input,textarea { background: #2c2c2e; color: #fff; border-color: #444; }
-      .tab,.secondary { background: #2c2c2e !important; color: #fff !important; }
-      .tab.active,.primary { background: #fff !important; color: #111 !important; }
-      .subscription-box { border-top-color: #3a3a3c; }
-      .fixed { background: #2c2c2e; }
+      :root {
+        --bg: #0d0f15; --surface: rgba(24,26,35,.84); --surface-strong: #20232e; --surface-soft: #181b23;
+        --text: #f2f3f7; --muted: #989cab; --line: rgba(255,255,255,.09); --accent-soft: rgba(126,105,255,.15);
+        --shadow: 0 22px 60px rgba(0,0,0,.25);
+      }
+      body { background: radial-gradient(circle at 12% -5%,rgba(111,87,245,.23),transparent 31rem),radial-gradient(circle at 92% 5%,rgba(47,125,255,.12),transparent 28rem),#0d0f15; }
+      .version-badge { background: rgba(28,30,40,.72); }
+      .card { border-color: rgba(255,255,255,.07); }
+      .subcard { background: linear-gradient(180deg,rgba(31,34,45,.82),rgba(25,28,37,.72)); }
+      input { background: rgba(30,33,43,.9); }
+      .check-item { background: rgba(34,37,48,.72); }
+      button.secondary { background: #242733; }
     }
   </style>
 </head>
 <body>
   <main class="wrap">
-    <h1>Primus Proxy Config</h1>
-    <p class="sub">Loon / Mihomo 配置统一入口</p>
-    <p class="version-line">Mihomo v4 · Loon v20</p>
+    <header class="hero">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div>
+          <h1>Primus Proxy</h1>
+          <p class="sub">一个入口，维护 Mihomo / Clash 与 Loon 的日用代理配置。</p>
+        </div>
+      </div>
+      <div class="version-stack">
+        <span class="version-badge"><strong>Mihomo</strong> v4</span>
+        <span class="version-badge"><strong>Loon</strong> v21</span>
+      </div>
+    </header>
 
     <section class="card">
       <div class="tabs">
-        <button class="tab active" data-tab="mihomo">Mihomo / Clash · v4</button>
-        <button class="tab" data-tab="loon">Loon · v20</button>
+        <button class="tab active" data-tab="mihomo">Mihomo / Clash</button>
+        <button class="tab" data-tab="loon">Loon</button>
       </div>
 
-      <div id="mihomo-panel">
+      <div id="mihomo-panel" class="panel">
         <div class="subcard">
           <h3>节点来源</h3>
           <div class="source-row">
@@ -86,7 +258,7 @@
             <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
           </div>
           <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
-          <p class="hint">取消某个来源后，该订阅链接可以留空；来源启用与策略组使用相互独立。选择状态会保存在当前浏览器，但订阅 URL 不会保存。</p>
+          <p class="hint">取消某个来源后，该订阅链接可以留空。选择状态会保存在当前浏览器，但真实订阅 URL 不会写入本地存储。</p>
         </div>
 
         <div class="subcard">
@@ -97,8 +269,7 @@
             <label class="check-item"><input class="daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
-
-          <div class="group-title">地区（可多选）</div>
+          <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="select-all-regions" type="button" class="secondary mini">全选</button>
             <button id="clear-regions" type="button" class="secondary mini">清空</button>
@@ -109,7 +280,7 @@
         <div class="subcard">
           <h3>🤖 AI</h3>
           <div class="group-title">地区</div>
-          <div class="fixed">🇺🇸 美国（固定）</div>
+          <div class="fixed">🇺🇸 美国 · 固定</div>
           <div class="group-title">来源</div>
           <div class="option-grid">
             <label class="check-item"><input class="ai-source" data-source="airport" type="checkbox" checked>机场</label>
@@ -118,8 +289,6 @@
           </div>
         </div>
 
-        <p class="hint">“生成配置”只在当前浏览器本地处理；“生成订阅链接”会把已启用的上游地址及策略选择提交到 Primus 配置后端并保存到 KV，用随机 token 生成私有订阅地址。</p>
-
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
           <button id="copy" class="secondary">复制 YAML</button>
@@ -127,6 +296,8 @@
         </div>
 
         <div class="subscription-box">
+          <h3>私有订阅</h3>
+          <p class="hint">需要跨设备或让 Clash Verge Rev 自动更新时再生成。上游地址和策略选择会提交到 Primus 配置后端并保存到 KV。</p>
           <div class="actions">
             <button id="create-subscription" class="primary">生成订阅链接</button>
             <button id="copy-subscription" class="secondary" disabled>复制订阅链接</button>
@@ -134,15 +305,15 @@
           </div>
           <label for="subscription-url">Primus 订阅链接</label>
           <input id="subscription-url" type="text" readonly placeholder="生成后会显示在这里">
-          <p class="hint">订阅链接等同于密钥，请勿公开分享。一键导入后 Clash Verge Rev 中显示名称为 Primus。</p>
+          <p class="hint">订阅链接本身等同于密钥，请勿公开分享。</p>
         </div>
       </div>
 
-      <div id="loon-panel" class="hidden">
+      <div id="loon-panel" class="panel hidden">
         <div class="subcard">
           <h3>使用顺序</h3>
-          <p class="hint"><strong>1. 先选来源和地区 → 2. 生成 Loon 配置 → 3. 一键导入配置 → 4. 最后在 Loon App 里添加节点订阅资源。</strong></p>
-          <p class="hint">节点订阅不会写入配置文件。你在 Loon 内后添加的资源名称必须严格叫：<strong>机场 / 自建 / 备用</strong>。没有启用的来源不需要导入节点。</p>
+          <p class="hint"><strong>选择来源与地区 → 生成 Loon 配置 → 一键导入配置 → 最后在 Loon App 内添加节点订阅资源。</strong></p>
+          <p class="hint">节点 URL 不写入配置文件。你在 Loon 中添加的资源名称必须严格叫：<strong>机场 / 自建 / 备用</strong>。</p>
         </div>
 
         <div class="subcard">
@@ -162,7 +333,7 @@
             <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
-          <div class="group-title">地区（可多选）</div>
+          <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="loon-select-all-regions" type="button" class="secondary mini">全选</button>
             <button id="loon-clear-regions" type="button" class="secondary mini">清空</button>
@@ -173,7 +344,7 @@
         <div class="subcard">
           <h3>🤖 AI</h3>
           <div class="group-title">地区</div>
-          <div class="fixed">🇺🇸 美国（固定）</div>
+          <div class="fixed">🇺🇸 美国 · 固定</div>
           <div class="group-title">来源</div>
           <div class="option-grid">
             <label class="check-item"><input class="loon-ai-source" data-source="airport" type="checkbox" checked>机场</label>
@@ -189,15 +360,23 @@
         </div>
 
         <div class="subscription-box">
+          <h3>Loon 导入</h3>
           <div class="actions">
             <button id="import-loon" class="primary" disabled>一键导入 Loon 配置</button>
           </div>
-          <p class="hint">只有先生成当前选择对应的配置后，这个按钮才会启用；如果你之后修改了来源或地区，必须重新生成，避免导入旧配置。</p>
+          <p class="hint">修改来源或地区后，需要重新生成配置，避免导入旧选择。</p>
         </div>
       </div>
 
-      <div id="status" class="status"></div>
+      <div class="status-wrap">
+        <div class="preview-title">Config Preview</div>
+        <div id="status" class="status">准备就绪</div>
+      </div>
       <textarea id="output" readonly placeholder="生成后的配置会显示在这里"></textarea>
+      <div class="privacy-note">
+        <span>🔒</span>
+        <span>本地“生成配置”不会上传真实订阅 URL；只有主动点击“生成订阅链接”时才会提交到你的 Cloudflare Worker。</span>
+      </div>
     </section>
   </main>
 
