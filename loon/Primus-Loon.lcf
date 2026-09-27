@@ -1,8 +1,8 @@
 # ============================================================
 # Primus Loon 动态手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v20
-# 更新日期：2026-09-20 12:55:00
+# 版本：v21
+# 更新日期：2026-09-27 15:49:59
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
@@ -100,6 +100,7 @@ https://kelee.one/Tool/Loon/Lpx/Block_HTTPDNS.lpx, pin=true, enabled=true
 https://kelee.one/Tool/Loon/Lpx/BlockAdvertisers.lpx, pin=true, enabled=true
 https://kelee.one/Tool/Loon/Lpx/Prevent_DNS_Leaks.lpx, policy=全球代理策略, enabled=true
 https://kelee.one/Tool/Loon/Lpx/Node_detection_tool.lpx, enabled=true
+https://rucu6.pages.dev/Plugins/nodecheck.lpx, enabled=true
 
 [Mitm]
 hostname =
