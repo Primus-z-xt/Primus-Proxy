@@ -1,9 +1,10 @@
-// Primus Config Worker v3
+// Primus Config Worker v4
 // Dynamic source + daily region selection for Mihomo and Loon.
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
+const VERSION_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/VERSION.json";
 const ALLOWED_ORIGIN = "https://primus-z-xt.github.io";
 const SOURCE_ORDER = ["airport", "self", "backup"];
 const SOURCE_META = {
@@ -63,6 +64,26 @@ function validUrl(value) {
 
 function yamlEscape(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function applyVersionMetadata(template, manifest, product) {
+  const meta = manifest?.[product];
+  const version = Number(meta?.version);
+  const updatedAt = String(meta?.updated_at || "").trim();
+  if (!Number.isInteger(version) || version < 1 || !updatedAt) return template;
+  return template
+    .replace(/^# 版本：v.*$/m, `# 版本：v${version}`)
+    .replace(/^# 更新日期：.*$/m, `# 更新日期：${updatedAt}`);
+}
+
+async function fetchVersionManifest() {
+  try {
+    const response = await fetch(VERSION_URL, { cf: { cacheTtl: 0, cacheEverything: false } });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (_) {
+    return null;
+  }
 }
 
 function shortHash(value) {
@@ -520,9 +541,10 @@ async function handleLoonGet(token, env) {
     });
   }
 
-  const templateResponse = await fetch(LOON_TEMPLATE_URL, {
-    cf: { cacheTtl: 0, cacheEverything: false }
-  });
+  const [templateResponse, versionManifest] = await Promise.all([
+    fetch(LOON_TEMPLATE_URL, { cf: { cacheTtl: 0, cacheEverything: false } }),
+    fetchVersionManifest()
+  ]);
   if (!templateResponse.ok) {
     return new Response("Failed to fetch Loon template", {
       status: 502,
@@ -531,7 +553,8 @@ async function handleLoonGet(token, env) {
   }
 
   try {
-    const lcf = renderLoonTemplate(await templateResponse.text(), config);
+    const template = applyVersionMetadata(await templateResponse.text(), versionManifest, "loon");
+    const lcf = renderLoonTemplate(template, config);
     return new Response(lcf, {
       status: 200,
       headers: {
@@ -581,11 +604,15 @@ async function handleGet(token, env) {
   const config = normalizeStored(record);
   if (!config.daily_sources.length || !config.ai_sources.length) return new Response("Subscription has no usable sources", { status: 500, headers: { "Cache-Control": "no-store" } });
 
-  const templateResponse = await fetch(MIHOMO_TEMPLATE_URL, { cf: { cacheTtl: 0, cacheEverything: false } });
+  const [templateResponse, versionManifest] = await Promise.all([
+    fetch(MIHOMO_TEMPLATE_URL, { cf: { cacheTtl: 0, cacheEverything: false } }),
+    fetchVersionManifest()
+  ]);
   if (!templateResponse.ok) return new Response("Failed to fetch template", { status: 502, headers: { "Cache-Control": "no-store" } });
 
   try {
-    const yaml = renderTemplate(await templateResponse.text(), config);
+    const template = applyVersionMetadata(await templateResponse.text(), versionManifest, "mihomo");
+    const yaml = renderTemplate(template, config);
     return new Response(yaml, {
       status: 200,
       headers: {
