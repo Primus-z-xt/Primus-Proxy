@@ -7,6 +7,7 @@ on:
       - "builder/**"
       - "mihomo/**"
       - "loon/**"
+      - "VERSION.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -36,6 +37,7 @@ jobs:
           mkdir -p _site
           cp builder/index.html _site/index.html
           cp builder/app.js _site/app.js
+          cp VERSION.json _site/VERSION.json
           cp mihomo/template.yaml _site/template.yaml
           cp loon/Primus-Loon.lcf _site/Primus-Loon.lcf
           cp loon/template.lcf _site/Loon-template.lcf
