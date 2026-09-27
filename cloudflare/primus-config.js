@@ -146,7 +146,7 @@ function providerName(sourceKey, regionCode) {
   return `${SOURCE_META[sourceKey].label} · ${REGIONS[regionCode].label}`;
 }
 
-function buildProviders(config) {
+function buildProvidersLegacy(config) {
   const needed = new Map();
   for (const sourceKey of config.daily_sources) {
     // Legacy v1 behavior was: 自建全部 + 机场新加坡.
@@ -192,7 +192,7 @@ function buildProviders(config) {
   return lines.join("\n").trimEnd();
 }
 
-function buildGroups(config) {
+function buildGroupsLegacy(config) {
   const dailyProviders = [];
   for (const sourceKey of config.daily_sources) {
     if (config._legacy && sourceKey === "self") {
@@ -222,6 +222,103 @@ function buildGroups(config) {
   }
   lines.push(``, `  - name: "🤖 AI"`, `    type: select`, `    use:`);
   for (const name of aiProviders) lines.push(`      - "${name}"`);
+  lines.push(
+    ``,
+    `  - name: "🍅 番茄"`,
+    `    type: select`,
+    `    proxies:`,
+    `      - DIRECT`,
+    `      - "🌐 全球代理策略"`,
+    ``,
+    `  - name: "🎵 抖音"`,
+    `    type: select`,
+    `    proxies:`,
+    `      - DIRECT`,
+    `      - "🌐 全球代理策略"`,
+    ``,
+    `  - name: "📕 小红书"`,
+    `    type: select`,
+    `    proxies:`,
+    `      - DIRECT`,
+    `      - "🌐 全球代理策略"`
+  );
+  return lines.join("\n");
+}
+
+
+function combinedRegionRegex(codes) {
+  const parts = codes
+    .map(code => REGIONS[code]?.regex || "")
+    .filter(Boolean)
+    .map(pattern => pattern.replace(/^\(\?i\)/, ""));
+  return `(?i)(${parts.join("|")})`;
+}
+
+function buildProviders(config) {
+  if (config._legacy) return buildProvidersLegacy(config);
+
+  const lines = [];
+  for (const sourceKey of SOURCE_ORDER) {
+    if (!config.sources[sourceKey]?.enabled) continue;
+    const meta = SOURCE_META[sourceKey];
+    lines.push(
+      `  ${meta.label}:`,
+      `    type: http`,
+      `    url: "${yamlEscape(config.sources[sourceKey].url)}"`,
+      `    path: ${providerCachePath(sourceKey, "all", config.sources[sourceKey].url)}`,
+      `    interval: 600`
+    );
+    if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+    lines.push("");
+  }
+  return lines.join("\n").trimEnd();
+}
+
+function buildGroups(config) {
+  if (config._legacy) return buildGroupsLegacy(config);
+
+  const dailyProviders = config.daily_sources.map(key => SOURCE_META[key].label);
+  const aiProviders = config.ai_sources.map(key => SOURCE_META[key].label);
+  const hasBackup = Boolean(config.sources.backup?.enabled);
+  const dailyFilter = combinedRegionRegex(config.daily_regions);
+  const aiFilter = REGIONS.US.regex;
+
+  const lines = [
+    `  - name: "🌐 全球代理策略"`,
+    `    type: select`,
+    `    proxies:`,
+    `      - "🚀 日用节点"`
+  ];
+  if (hasBackup) lines.push(`      - "🛟 备用节点"`);
+
+  lines.push(
+    ``,
+    `  - name: "🚀 日用节点"`,
+    `    type: select`,
+    `    use:`
+  );
+  for (const name of dailyProviders) lines.push(`      - "${name}"`);
+  lines.push(`    filter: '${dailyFilter}'`);
+
+  if (hasBackup) {
+    lines.push(
+      ``,
+      `  - name: "🛟 备用节点"`,
+      `    type: select`,
+      `    use:`,
+      `      - "备用"`
+    );
+  }
+
+  lines.push(
+    ``,
+    `  - name: "🤖 AI"`,
+    `    type: select`,
+    `    use:`
+  );
+  for (const name of aiProviders) lines.push(`      - "${name}"`);
+  lines.push(`    filter: '${aiFilter}'`);
+
   lines.push(
     ``,
     `  - name: "🍅 番茄"`,
