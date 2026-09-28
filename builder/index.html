@@ -392,6 +392,20 @@
           </div>
         </div>
 
+        <div class="subcard">
+          <h3>📺 Emby</h3>
+          <p class="hint">填写后启用独立 Emby 分流。线路不会写入 GitHub，也不会保存到浏览器本地存储；只有生成远程订阅时才会随配置保存到你的私有 KV。</p>
+          <label for="emby-target">私有播放线路</label>
+          <input id="emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
+          <label class="show-row"><input id="show-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">可选来源 · 客户端内手动切换</div>
+          <div class="option-grid source-grid">
+            <label class="check-item"><input class="emby-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="emby-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>
+
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
           <button id="copy" class="secondary">复制 YAML</button>
@@ -453,6 +467,20 @@
             <label class="check-item"><input class="loon-ai-source" data-source="airport" type="checkbox" checked>机场</label>
             <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>📺 Emby</h3>
+          <p class="hint">填写后启用独立 Emby 分流。线路不会写入 GitHub，也不会保存到浏览器本地存储；生成 Loon 私有配置链接时才会保存到你的私有 KV。</p>
+          <label for="loon-emby-target">私有播放线路</label>
+          <input id="loon-emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
+          <label class="show-row"><input id="show-loon-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">可选来源 · Loon 内手动切换</div>
+          <div class="option-grid source-grid">
+            <label class="check-item"><input class="loon-emby-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
         </div>
 
