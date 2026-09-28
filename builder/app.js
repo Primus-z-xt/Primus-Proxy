@@ -225,6 +225,50 @@
       .map(el => el.dataset[dataKey]);
   }
 
+  function parsePrivateTargets(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return { targets: [], invalid: [] };
+
+    const targets = [];
+    const invalid = [];
+    for (const part of raw.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean)) {
+      try {
+        const url = new URL(part.includes("://") ? part : `https://${part}`);
+        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("unsupported protocol");
+        const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+        if (!host) throw new Error("empty host");
+        if (!targets.includes(host)) targets.push(host);
+      } catch (_) {
+        invalid.push(part);
+      }
+    }
+    return { targets, invalid };
+  }
+
+  function isIPv4(value) {
+    const parts = String(value).split(".");
+    return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255);
+  }
+
+  function isIPv6(value) {
+    return String(value).includes(":") && /^[0-9a-f:]+$/i.test(String(value));
+  }
+
+  function buildPrivateRuleLines(targets, policy) {
+    return (targets || []).map(target => {
+      if (isIPv4(target)) return `IP-CIDR,${target}/32,${policy},no-resolve`;
+      if (isIPv6(target)) return `IP-CIDR6,${target}/128,${policy},no-resolve`;
+      return `DOMAIN-SUFFIX,${target},${policy}`;
+    });
+  }
+
+  function injectPrivateRules(template, rules) {
+    return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
+      if (!rules.length) return `${indent}# 私有 Emby 分流未启用`;
+      return rules.map(rule => `${indent}${rule}`).join("\n");
+    });
+  }
+
   function getConfigFromUi() {
     const sources = {};
     for (const key of SOURCE_ORDER) {
@@ -234,12 +278,20 @@
         url: document.getElementById(meta.urlId).value.trim()
       };
     }
+    const embyParsed = parsePrivateTargets(document.getElementById("emby-target").value);
+    const embySources = selectedValues(".emby-source", "source").filter(key => sources[key].enabled);
     return {
-      version: 2,
+      version: 3,
       sources,
       daily_sources: selectedValues(".daily-source", "source").filter(key => sources[key].enabled),
       daily_regions: selectedValues(".daily-region", "region"),
-      ai_sources: selectedValues(".ai-source", "source").filter(key => sources[key].enabled)
+      ai_sources: selectedValues(".ai-source", "source").filter(key => sources[key].enabled),
+      emby: {
+        enabled: embyParsed.targets.length > 0,
+        targets: embyParsed.targets,
+        sources: embySources,
+        invalid: embyParsed.invalid
+      }
     };
   }
 
@@ -252,6 +304,8 @@
     if (!config.daily_sources.length) return "日用节点至少选择一个已启用来源";
     if (!config.daily_regions.length) return "日用节点至少选择一个地区";
     if (!config.ai_sources.length) return "AI 至少选择一个已启用来源";
+    if (config.emby.invalid.length) return `Emby 播放线路格式无效：${config.emby.invalid[0]}`;
+    if (config.emby.enabled && !config.emby.sources.length) return "Emby 至少选择一个已启用来源";
     return "";
   }
 
@@ -329,6 +383,27 @@
     for (const name of aiProviders) lines.push(`      - "${name}"`);
     lines.push(`    filter: '${aiFilter}'`);
 
+    if (config.emby?.enabled) {
+      lines.push(
+        ``,
+        `  - name: "📺 Emby"`,
+        `    type: select`,
+        `    proxies:`
+      );
+      for (const sourceKey of config.emby.sources) {
+        lines.push(`      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
+      }
+      for (const sourceKey of config.emby.sources) {
+        lines.push(
+          ``,
+          `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
+          `    type: select`,
+          `    use:`,
+          `      - "${SOURCE_META[sourceKey].label}"`
+        );
+      }
+    }
+
     lines.push(
       ``, `  - name: "🍅 番茄"`, `    type: select`, `    proxies:`, `      - DIRECT`, `      - "🌐 全球代理策略"`,
       ``, `  - name: "🎵 抖音"`, `    type: select`, `    proxies:`, `      - DIRECT`, `      - "🌐 全球代理策略"`,
@@ -341,9 +416,11 @@
     if (!mihomoTemplate.includes("__PROXY_PROVIDERS__") || !mihomoTemplate.includes("__PROXY_GROUPS__")) {
       throw new Error("Mihomo 模板缺少动态区块占位符");
     }
-    return mihomoTemplate
+    const rendered = mihomoTemplate
       .replace("__PROXY_PROVIDERS__", buildProviders(config))
       .replace("__PROXY_GROUPS__", buildGroups(config));
+    const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
+    return injectPrivateRules(rendered, privateRules);
   }
 
   function saveSelections() {
@@ -352,7 +429,8 @@
       enabled: Object.fromEntries(SOURCE_ORDER.map(key => [key, config.sources[key].enabled])),
       daily_sources: config.daily_sources,
       daily_regions: config.daily_regions,
-      ai_sources: config.ai_sources
+      ai_sources: config.ai_sources,
+      emby_sources: config.emby.sources
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
   }
@@ -366,6 +444,7 @@
     }
     if (Array.isArray(saved.daily_sources)) document.querySelectorAll(".daily-source").forEach(el => { el.checked = saved.daily_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
+    if (Array.isArray(saved.emby_sources)) document.querySelectorAll(".emby-source").forEach(el => { el.checked = saved.emby_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.daily_regions)) document.querySelectorAll(".daily-region").forEach(el => { el.checked = saved.daily_regions.includes(el.dataset.region); });
   }
 
@@ -430,12 +509,19 @@
 
   function getLoonConfigFromUi() {
     const enabledSources = selectedValues(".loon-enabled-source", "source");
+    const embyParsed = parsePrivateTargets(document.getElementById("loon-emby-target").value);
     return {
-      version: 1,
+      version: 2,
       enabled_sources: enabledSources,
       daily_sources: selectedValues(".loon-daily-source", "source").filter(key => enabledSources.includes(key)),
       daily_regions: selectedValues(".loon-daily-region", "region"),
-      ai_sources: selectedValues(".loon-ai-source", "source").filter(key => enabledSources.includes(key))
+      ai_sources: selectedValues(".loon-ai-source", "source").filter(key => enabledSources.includes(key)),
+      emby: {
+        enabled: embyParsed.targets.length > 0,
+        targets: embyParsed.targets,
+        sources: selectedValues(".loon-emby-source", "source").filter(key => enabledSources.includes(key)),
+        invalid: embyParsed.invalid
+      }
     };
   }
 
@@ -444,6 +530,8 @@
     if (!config.daily_sources.length) return "Loon 日用节点至少选择一个已启用来源";
     if (!config.daily_regions.length) return "Loon 日用节点至少选择一个地区";
     if (!config.ai_sources.length) return "Loon AI 至少选择一个已启用来源";
+    if (config.emby.invalid.length) return `Loon Emby 播放线路格式无效：${config.emby.invalid[0]}`;
+    if (config.emby.enabled && !config.emby.sources.length) return "Loon Emby 至少选择一个已启用来源";
     return "";
   }
 
@@ -457,12 +545,15 @@
     for (const sourceKey of config.ai_sources) {
       needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
     }
+    const embyAllSources = new Set(config.emby?.enabled ? config.emby.sources : []);
 
     const lines = [];
     for (const sourceKey of SOURCE_ORDER) {
       if (!config.enabled_sources.includes(sourceKey)) continue;
       if (sourceKey === "backup") {
         lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+      } else if (embyAllSources.has(sourceKey)) {
+        lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);
       }
       for (const regionCode of Object.keys(REGIONS)) {
         if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
@@ -495,7 +586,15 @@
     }
 
     lines.push(
-      `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`,
+      `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
+    );
+
+    if (config.emby?.enabled) {
+      const embyFilters = config.emby.sources.map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
+      lines.push(`Emby = select,${embyFilters.join(",")}`);
+    }
+
+    lines.push(
       `番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png`,
       `抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png`,
       `小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png`
@@ -508,9 +607,11 @@
     if (!loonTemplate.includes("__REMOTE_FILTERS__") || !loonTemplate.includes("__PROXY_GROUPS__")) {
       throw new Error("Loon 模板缺少动态区块占位符");
     }
-    return loonTemplate
+    const rendered = loonTemplate
       .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
       .replace("__PROXY_GROUPS__", buildLoonGroups(config));
+    const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "Emby") : [];
+    return injectPrivateRules(rendered, privateRules);
   }
 
   function loonFingerprint(config) {
@@ -518,13 +619,24 @@
       enabled_sources: config.enabled_sources,
       daily_sources: config.daily_sources,
       daily_regions: config.daily_regions,
-      ai_sources: config.ai_sources
+      ai_sources: config.ai_sources,
+      emby: {
+        targets: config.emby.targets,
+        sources: config.emby.sources
+      }
     });
   }
 
   function saveLoonSelections() {
     const config = getLoonConfigFromUi();
-    localStorage.setItem(LOON_STORAGE_KEY, loonFingerprint(config));
+    const safe = {
+      enabled_sources: config.enabled_sources,
+      daily_sources: config.daily_sources,
+      daily_regions: config.daily_regions,
+      ai_sources: config.ai_sources,
+      emby_sources: config.emby.sources
+    };
+    localStorage.setItem(LOON_STORAGE_KEY, JSON.stringify(safe));
   }
 
   function restoreLoonSelections() {
@@ -535,6 +647,7 @@
     if (Array.isArray(saved.daily_sources)) document.querySelectorAll(".loon-daily-source").forEach(el => { el.checked = saved.daily_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.daily_regions)) document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = saved.daily_regions.includes(el.dataset.region); });
     if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".loon-ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
+    if (Array.isArray(saved.emby_sources)) document.querySelectorAll(".loon-emby-source").forEach(el => { el.checked = saved.emby_sources.includes(el.dataset.source); });
   }
 
   function invalidateLoonGeneration(message = "") {
@@ -546,7 +659,7 @@
 
   function syncLoonSourceUi(invalidate = true) {
     const enabled = selectedValues(".loon-enabled-source", "source");
-    document.querySelectorAll(".loon-daily-source,.loon-ai-source").forEach(el => {
+    document.querySelectorAll(".loon-daily-source,.loon-ai-source,.loon-emby-source").forEach(el => {
       el.disabled = !enabled.includes(el.dataset.source);
     });
     saveLoonSelections();
@@ -660,7 +773,7 @@
   document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, "Primus-Loon.lcf"));
 
   document.querySelectorAll(".loon-enabled-source").forEach(el => el.addEventListener("change", () => syncLoonSourceUi(true)));
-  document.querySelectorAll(".loon-daily-source,.loon-daily-region,.loon-ai-source").forEach(el => el.addEventListener("change", () => {
+  document.querySelectorAll(".loon-daily-source,.loon-daily-region,.loon-ai-source,.loon-emby-source").forEach(el => el.addEventListener("change", () => {
     saveLoonSelections();
     invalidateLoonGeneration("Loon 选择已变更，请重新生成配置");
   }));
@@ -678,8 +791,17 @@
   document.getElementById("show-urls").addEventListener("change", e => {
     for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].urlId).type = e.target.checked ? "text" : "password";
   });
+  document.getElementById("show-emby-target").addEventListener("change", e => {
+    document.getElementById("emby-target").type = e.target.checked ? "text" : "password";
+  });
+  document.getElementById("show-loon-emby-target").addEventListener("change", e => {
+    document.getElementById("loon-emby-target").type = e.target.checked ? "text" : "password";
+  });
+  document.getElementById("loon-emby-target").addEventListener("input", () => {
+    invalidateLoonGeneration("Loon Emby 线路已变更，请重新生成配置");
+  });
   for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].enableId).addEventListener("change", syncSourceUi);
-  document.querySelectorAll(".daily-source,.daily-region,.ai-source").forEach(el => el.addEventListener("change", saveSelections));
+  document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", saveSelections));
   document.getElementById("select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".daily-region").forEach(el => { el.checked = true; }); saveSelections();
   });
