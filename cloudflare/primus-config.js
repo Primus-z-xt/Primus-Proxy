@@ -1,4 +1,4 @@
-// Primus Config Worker v4
+// Primus Config Worker v5
 // Dynamic source + daily region selection for Mihomo and Loon.
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 
@@ -108,6 +108,55 @@ function uniqueAllowed(values, allowed) {
   return result;
 }
 
+function normalizePrivateTarget(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  } catch (_) {
+    return "";
+  }
+}
+
+function normalizeEmby(value, enabledSources) {
+  const rawTargets = Array.isArray(value?.targets) ? value.targets : [];
+  const targets = [];
+  for (const item of rawTargets) {
+    const target = normalizePrivateTarget(item);
+    if (!target) throw new Error("Emby 播放线路格式无效");
+    if (!targets.includes(target)) targets.push(target);
+  }
+  const sources = uniqueAllowed(value?.sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  if (targets.length && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
+  return { enabled: targets.length > 0, targets, sources };
+}
+
+function isIPv4(value) {
+  const parts = String(value).split(".");
+  return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255);
+}
+
+function isIPv6(value) {
+  return String(value).includes(":") && /^[0-9a-f:]+$/i.test(String(value));
+}
+
+function buildPrivateRuleLines(targets, policy) {
+  return (targets || []).map(target => {
+    if (isIPv4(target)) return `IP-CIDR,${target}/32,${policy},no-resolve`;
+    if (isIPv6(target)) return `IP-CIDR6,${target}/128,${policy},no-resolve`;
+    return `DOMAIN-SUFFIX,${target},${policy}`;
+  });
+}
+
+function injectPrivateRules(template, rules) {
+  return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
+    if (!rules.length) return `${indent}# 私有 Emby 分流未启用`;
+    return rules.map(rule => `${indent}${rule}`).join("\n");
+  });
+}
+
 function normalizeNewPayload(body) {
   const sources = {};
   for (const key of SOURCE_ORDER) {
@@ -132,7 +181,8 @@ function normalizeNewPayload(body) {
   if (!dailyRegions.length) throw new Error("日用节点至少选择一个地区");
   if (!aiSources.length) throw new Error("AI 至少选择一个已启用来源");
 
-  return { version: 2, sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources };
+  const emby = normalizeEmby(body?.emby, enabledKeys);
+  return { version: 3, sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources, emby };
 }
 
 function normalizeLegacy(record) {
@@ -151,13 +201,14 @@ function normalizeLegacy(record) {
     daily_sources: ["self", "airport"].filter(key => sources[key].enabled),
     daily_regions: ["SG"],
     ai_sources: ["airport", "self", "backup"].filter(key => sources[key].enabled),
+    emby: { enabled: false, targets: [], sources: [] },
     _legacy: true,
     _enabled: enabled
   };
 }
 
 function normalizeStored(record) {
-  if (record?.version === 2 && record?.sources) {
+  if (Number(record?.version) >= 2 && record?.sources) {
     try { return normalizeNewPayload(record); } catch (_) {}
   }
   return normalizeLegacy(record || {});
@@ -340,6 +391,27 @@ function buildGroups(config) {
   for (const name of aiProviders) lines.push(`      - "${name}"`);
   lines.push(`    filter: '${aiFilter}'`);
 
+  if (config.emby?.enabled) {
+    lines.push(
+      ``,
+      `  - name: "📺 Emby"`,
+      `    type: select`,
+      `    proxies:`
+    );
+    for (const sourceKey of config.emby.sources) {
+      lines.push(`      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
+    }
+    for (const sourceKey of config.emby.sources) {
+      lines.push(
+        ``,
+        `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
+        `    type: select`,
+        `    use:`,
+        `      - "${SOURCE_META[sourceKey].label}"`
+      );
+    }
+  }
+
   lines.push(
     ``,
     `  - name: "🍅 番茄"`,
@@ -376,9 +448,11 @@ function isLegacyDefault(config) {
 
 function renderTemplate(template, config) {
   if (template.includes("__PROXY_PROVIDERS__") && template.includes("__PROXY_GROUPS__")) {
-    return template
+    const rendered = template
       .replace("__PROXY_PROVIDERS__", buildProviders(config))
       .replace("__PROXY_GROUPS__", buildGroups(config));
+    const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
+    return injectPrivateRules(rendered, privateRules);
   }
 
   // Zero-downtime rollout: before main switches to the v2 template, keep legacy
@@ -407,12 +481,14 @@ function normalizeLoonPayload(body) {
   if (!dailyRegions.length) throw new Error("Loon 日用节点至少选择一个地区");
   if (!aiSources.length) throw new Error("Loon AI 至少选择一个已启用来源");
 
+  const emby = normalizeEmby(body?.emby, enabledSources);
   return {
-    version: 1,
+    version: 2,
     enabled_sources: enabledSources,
     daily_sources: dailySources,
     daily_regions: dailyRegions,
-    ai_sources: aiSources
+    ai_sources: aiSources,
+    emby
   };
 }
 
@@ -427,6 +503,7 @@ function buildLoonFilters(config) {
   for (const sourceKey of config.ai_sources) {
     needed.set(`${sourceKey}:US`, [sourceKey, "US"]);
   }
+  const embyAllSources = new Set(config.emby?.enabled ? config.emby.sources : []);
 
   const lines = [];
   for (const sourceKey of SOURCE_ORDER) {
@@ -434,6 +511,8 @@ function buildLoonFilters(config) {
 
     if (sourceKey === "backup") {
       lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+    } else if (embyAllSources.has(sourceKey)) {
+      lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);
     }
 
     for (const regionCode of Object.keys(REGIONS)) {
@@ -470,7 +549,15 @@ function buildLoonGroups(config) {
   }
 
   lines.push(
-    `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`,
+    `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
+  );
+
+  if (config.emby?.enabled) {
+    const embyFilters = config.emby.sources.map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
+    lines.push(`Emby = select,${embyFilters.join(",")}`);
+  }
+
+  lines.push(
     `番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png`,
     `抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png`,
     `小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png`
@@ -483,9 +570,11 @@ function renderLoonTemplate(template, config) {
   if (!template.includes("__REMOTE_FILTERS__") || !template.includes("__PROXY_GROUPS__")) {
     throw new Error("GitHub Loon 模板缺少动态区块占位符");
   }
-  return template
+  const rendered = template
     .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
     .replace("__PROXY_GROUPS__", buildLoonGroups(config));
+  const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "Emby") : [];
+  return injectPrivateRules(rendered, privateRules);
 }
 
 async function handleLoonPost(request, env) {
