@@ -134,6 +134,9 @@ __PROXY_GROUPS__
 # 专项规则优先；LAN / CN 靠后；最终进入全球代理策略
 # -------------------------
 rules:
+  # 私有 Emby 分流：由 Builder / Worker 动态注入；真实线路不会写入 GitHub
+  # __PRIVATE_RULES__
+
   # 固定直连
   - DOMAIN-SUFFIX,4ktop.com,DIRECT
 
