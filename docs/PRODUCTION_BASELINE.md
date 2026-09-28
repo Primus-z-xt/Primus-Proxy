@@ -101,7 +101,32 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 - Node_detection_tool
 - nodecheck
 
-## 5. Builder
+## 5. 私有 Emby 分流
+
+当前生产支持独立 Emby 分流，属于配置行为，因此从本次变更起版本为 Mihomo v5 / Loon v22。
+
+隐私原则：
+
+- GitHub 只保存 Emby 功能代码，不保存真实播放线路。
+- Builder 的 Emby 线路输入框默认隐藏。
+- Emby 线路不写入 localStorage。
+- 本地生成配置时，线路只进入用户本地生成结果。
+- 生成远程 Mihomo / Loon 私有配置时，线路保存在 `MIHOMO_KV` 对应的私有 token 记录中。
+- 公开 Loon 快照不包含真实线路。
+
+策略结构：
+
+- Mihomo：`📺 Emby` → `📺 Emby · 机场 / 自建 / 备用` → 对应来源 Provider。
+- Loon：`Emby` → `机场 · 全部 / 自建 · 全部 / 备用 · 全部`。
+- 参与来源由 Builder 勾选，客户端内保持手动切换。
+- Emby 私有地址只用于生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 规则。
+
+Worker 兼容要求：
+
+- GitHub 模板中的私有规则注入点以注释形式存在，旧 Worker 读取新模板时不会破坏现有订阅。
+- 要让远程 Emby 订阅真正生效，必须把当前 `cloudflare/primus-config.js` 手动部署到 Cloudflare。
+
+## 6. Builder
 
 生产入口：
 
@@ -121,7 +146,7 @@ Loon：
 
 UI 行为不属于配置版本。UI 调整不应升级 Mihomo / Loon 版本。
 
-## 6. Cloudflare Worker
+## 7. Cloudflare Worker
 
 Worker：
 
@@ -151,7 +176,7 @@ Mihomo 仍兼容历史 KV token。
 **GitHub 中修改 `cloudflare/primus-config.js` 不等于已经部署到 Cloudflare。**
 在没有新增自动部署流程之前，Worker 代码变更仍需在 Cloudflare 侧手动部署。
 
-## 7. GitHub Pages
+## 8. GitHub Pages
 
 `.github/workflows/pages.yml` 发布：
 
@@ -164,7 +189,7 @@ Mihomo 仍兼容历史 KV token。
 
 Pages 发布成功后，Builder 会直接读取最新 `VERSION.json`。
 
-## 8. 隐私与安全
+## 9. 隐私与安全
 
 - 真实上游订阅 URL 不写入 GitHub。
 - Mihomo 本地生成不会上传订阅 URL。
@@ -172,7 +197,7 @@ Pages 发布成功后，Builder 会直接读取最新 `VERSION.json`。
 - Primus token URL 本身等同访问密钥，不公开分享。
 - Loon 动态配置不保存真实节点 URL。
 
-## 9. 后续修改读取顺序
+## 10. 后续修改读取顺序
 
 以后处理 Primus Proxy 生产问题时，优先按以下顺序读取：
 
