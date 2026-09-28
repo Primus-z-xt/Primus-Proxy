@@ -1,0 +1,408 @@
+name: One-off Emby region filter patch
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/oneoff-emby-region.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply Emby region filter patch
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+          import re
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          root = Path(".")
+
+          # ---------- Builder: UI hook ----------
+          html_path = root / "builder/index.html"
+          html = html_path.read_text(encoding="utf-8")
+          if 'src="./emby-region.js"' not in html:
+              marker = '<script src="./app.js"></script>'
+              assert marker in html, "builder/index.html: app.js script marker not found"
+              html = html.replace(marker, marker + '\n<script src="./emby-region.js"></script>', 1)
+
+          mihomo_emby_old = '''        <div class="subcard">
+          <h3>📺 Emby</h3>
+          <p class="hint">填写后启用独立 Emby 分流。线路不会写入 GitHub，也不会保存到浏览器本地存储；只有生成远程订阅时才会随配置保存到你的私有 KV。</p>
+          <label for="emby-target">私有播放线路</label>
+          <input id="emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
+          <label class="show-row"><input id="show-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">可选来源 · 客户端内手动切换</div>
+          <div class="option-grid source-grid">
+            <label class="check-item"><input class="emby-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="emby-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>'''
+          mihomo_emby_new = mihomo_emby_old + '''
+        <div class="group-title">地区 · 可多选</div>
+        <div class="inline-actions">
+          <button id="emby-select-all-regions" type="button" class="secondary mini">全选</button>
+          <button id="emby-clear-regions" type="button" class="secondary mini">清空</button>
+        </div>
+        <div id="emby-region-options"></div>'''
+          assert mihomo_emby_old in html, "builder/index.html: Mihomo Emby block not found"
+          html = html.replace(mihomo_emby_old, mihomo_emby_new, 1)
+
+          loon_emby_old = '''        <div class="subcard">
+          <h3>📺 Emby</h3>
+          <p class="hint">填写后启用独立 Emby 分流。线路不会写入 GitHub，也不会保存到浏览器本地存储；生成 Loon 私有配置链接时才会保存到你的私有 KV。</p>
+          <label for="loon-emby-target">私有播放线路</label>
+          <input id="loon-emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
+          <label class="show-row"><input id="show-loon-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">可选来源 · Loon 内手动切换</div>
+          <div class="option-grid source-grid">
+            <label class="check-item"><input class="loon-emby-source" data-source="airport" type="checkbox" checked>机场</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox" checked>备用</label>
+          </div>
+        </div>'''
+          loon_emby_new = loon_emby_old + '''
+        <div class="group-title">地区 · 可多选</div>
+        <div class="inline-actions">
+          <button id="loon-emby-select-all-regions" type="button" class="secondary mini">全选</button>
+          <button id="loon-emby-clear-regions" type="button" class="secondary mini">清空</button>
+        </div>
+        <div id="loon-emby-region-options"></div>'''
+          assert loon_emby_old in html, "builder/index.html: Loon Emby block not found"
+          html = html.replace(loon_emby_old, loon_emby_new, 1)
+          html_path.write_text(html, encoding="utf-8")
+
+          # ---------- Builder: overlay JS ----------
+          overlay = r'''(() => {
+  const EMBY_REGION_DEFAULT = "US";
+
+  function renderEmbyRegionOptions(rootId, className, defaultCode = EMBY_REGION_DEFAULT) {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+    root.innerHTML = "";
+    for (const group of REGION_GROUPS) {
+      const title = document.createElement("div");
+      title.className = "group-title";
+      title.textContent = group.title;
+      root.appendChild(title);
+      const grid = document.createElement("div");
+      grid.className = "option-grid region-grid";
+      for (const code of group.codes) {
+        const label = document.createElement("label");
+        label.className = "check-item";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = className;
+        input.dataset.region = code;
+        input.checked = code === defaultCode;
+        appendRegionLabel(label, input, code);
+        grid.appendChild(label);
+      }
+      root.appendChild(grid);
+    }
+  }
+
+  function embyRegions(selector) {
+    return selectedValues(selector, "region");
+  }
+
+  function requireEmbyRegions(config, label) {
+    if (config.emby?.enabled && !Array.isArray(config.emby.regions)) {
+      config.emby.regions = [];
+    }
+    if (config.emby?.enabled && !config.emby.regions.length) {
+      return `${label} Emby 至少选择一个地区`;
+    }
+    return "";
+  }
+
+  renderEmbyRegionOptions("emby-region-options", "emby-region");
+  renderEmbyRegionOptions("loon-emby-region-options", "loon-emby-region");
+  upgradeFlagImages();
+
+  const baseGetConfigFromUi = window.getConfigFromUi;
+  const baseBuildGroups = window.buildGroups;
+  const baseGetLoonConfigFromUi = window.getLoonConfigFromUi;
+  const baseBuildLoonFilters = window.buildLoonFilters;
+  const baseSaveSelections = window.saveSelections;
+  const baseRestoreSelections = window.restoreSelections;
+  const baseSaveLoonSelections = window.saveLoonSelections;
+  const baseRestoreLoonSelections = window.restoreLoonSelections;
+  const baseValidateConfig = window.validateConfig;
+  const baseValidateLoonConfig = window.validateLoonConfig;
+  const baseLoonFingerprint = window.loonFingerprint;
+
+  window.getConfigFromUi = function () {
+    const config = baseGetConfigFromUi();
+    config.emby = {
+      ...config.emby,
+      regions: embyRegions(".emby-region")
+    };
+    return config;
+  };
+
+  window.validateConfig = function (config) {
+    const error = baseValidateConfig(config);
+    if (error) return error;
+    return requireEmbyRegions(config, "Emby");
+  };
+
+  window.buildGroups = function (config) {
+    const result = baseBuildGroups(config);
+    if (!config.emby?.enabled || !config.emby.regions?.length) return result;
+    const filter = combinedRegionRegex(config.emby.regions);
+    return result.replace(/(  - name: "📺 Emby · [^"]+"\n    type: select\n    use:\n      - "[^"]+")/g, `$1\n    filter: '${filter}'`);
+  };
+
+  window.saveSelections = function () {
+    const config = window.getConfigFromUi();
+    const safe = {
+      enabled: Object.fromEntries(SOURCE_ORDER.map(key => [key, config.sources[key].enabled])),
+      daily_sources: config.daily_sources,
+      daily_regions: config.daily_regions,
+      ai_sources: config.ai_sources,
+      emby_sources: config.emby.sources,
+      emby_regions: config.emby.regions
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+  };
+
+  window.restoreSelections = function () {
+    baseRestoreSelections();
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (_) { return; }
+    if (Array.isArray(saved?.emby_regions)) {
+      document.querySelectorAll(".emby-region").forEach(el => { el.checked = saved.emby_regions.includes(el.dataset.region); });
+    }
+  };
+
+  window.getLoonConfigFromUi = function () {
+    const config = baseGetLoonConfigFromUi();
+    config.emby = {
+      ...config.emby,
+      regions: embyRegions(".loon-emby-region")
+    };
+    return config;
+  };
+
+  window.validateLoonConfig = function (config) {
+    const error = baseValidateLoonConfig(config);
+    if (error) return error;
+    return requireEmbyRegions(config, "Loon Emby");
+  };
+
+  window.buildLoonFilters = function (config) {
+    let result = baseBuildLoonFilters(config);
+    if (!config.emby?.enabled || !config.emby.regions?.length) return result;
+    const filter = combinedRegionRegex(config.emby.regions);
+    for (const sourceKey of config.emby.sources) {
+      const label = SOURCE_META[sourceKey].label;
+      const line = `${label} · 全部 = NameRegex,${label}, FilterKey = ".*"`;
+      const replacement = `${label} · 全部 = NameRegex,${label}, FilterKey = "${filter}"`;
+      result = result.replace(line, replacement);
+    }
+    return result;
+  };
+
+  window.loonFingerprint = function (config) {
+    const base = JSON.parse(baseLoonFingerprint(config));
+    base.emby = {
+      ...(base.emby || {}),
+      regions: config.emby.regions
+    };
+    return JSON.stringify(base);
+  };
+
+  window.saveLoonSelections = function () {
+    const config = window.getLoonConfigFromUi();
+    const safe = {
+      enabled_sources: config.enabled_sources,
+      daily_sources: config.daily_sources,
+      daily_regions: config.daily_regions,
+      ai_sources: config.ai_sources,
+      emby_sources: config.emby.sources,
+      emby_regions: config.emby.regions
+    };
+    localStorage.setItem(LOON_STORAGE_KEY, JSON.stringify(safe));
+  };
+
+  window.restoreLoonSelections = function () {
+    baseRestoreLoonSelections();
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem(LOON_STORAGE_KEY) || "null"); } catch (_) { return; }
+    if (Array.isArray(saved?.emby_regions)) {
+      document.querySelectorAll(".loon-emby-region").forEach(el => { el.checked = saved.emby_regions.includes(el.dataset.region); });
+    }
+  };
+
+  // app.js has already performed its initial restore. Apply persisted Emby regions now.
+  window.restoreSelections();
+  window.restoreLoonSelections();
+  window.saveSelections();
+  window.saveLoonSelections();
+
+  document.querySelectorAll(".emby-region").forEach(el => el.addEventListener("change", () => {
+    window.saveSelections();
+  }));
+  document.getElementById("emby-select-all-regions")?.addEventListener("click", () => {
+    document.querySelectorAll(".emby-region").forEach(el => { el.checked = true; });
+    window.saveSelections();
+  });
+  document.getElementById("emby-clear-regions")?.addEventListener("click", () => {
+    document.querySelectorAll(".emby-region").forEach(el => { el.checked = false; });
+    window.saveSelections();
+  });
+
+  document.querySelectorAll(".loon-emby-region").forEach(el => el.addEventListener("change", () => {
+    window.saveLoonSelections();
+    invalidateLoonGeneration("Loon Emby 地区选择已变更，请重新生成配置");
+  }));
+  document.getElementById("loon-emby-select-all-regions")?.addEventListener("click", () => {
+    document.querySelectorAll(".loon-emby-region").forEach(el => { el.checked = true; });
+    window.saveLoonSelections();
+    invalidateLoonGeneration("Loon Emby 地区选择已变更，请重新生成配置");
+  });
+  document.getElementById("loon-emby-clear-regions")?.addEventListener("click", () => {
+    document.querySelectorAll(".loon-emby-region").forEach(el => { el.checked = false; });
+    window.saveLoonSelections();
+    invalidateLoonGeneration("Loon Emby 地区选择已变更，请重新生成配置");
+  });
+})();
+'''
+          (root / "builder/emby-region.js").write_text(overlay, encoding="utf-8")
+
+          # ---------- Cloudflare Worker ----------
+          worker_path = root / "cloudflare/primus-config.js"
+          worker = worker_path.read_text(encoding="utf-8")
+          worker = worker.replace("// Primus Config Worker v5", "// Primus Config Worker v6", 1)
+
+          old = '''  const sources = uniqueAllowed(value?.sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  if (targets.length && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
+  return { enabled: targets.length > 0, targets, sources };
+}'''
+          new = '''  const sources = uniqueAllowed(value?.sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  const regions = uniqueAllowed(value?.regions, Object.keys(REGIONS));
+  if (targets.length && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
+  if (targets.length && !regions.length) throw new Error("Emby 至少选择一个地区");
+  return { enabled: targets.length > 0, targets, sources, regions };
+}'''
+          assert old in worker, "Worker normalizeEmby block not found"
+          worker = worker.replace(old, new, 1)
+          worker = worker.replace('emby: { enabled: false, targets: [], sources: [] },', 'emby: { enabled: false, targets: [], sources: [], regions: [] },', 1)
+
+          old = '''        `    type: select`,
+        `    use:`,
+        `      - "${SOURCE_META[sourceKey].label}"`
+      );'''
+          new = '''        `    type: select`,
+        `    use:`,
+        `      - "${SOURCE_META[sourceKey].label}"`,
+        `    filter: '${combinedRegionRegex(config.emby.regions)}'`
+      );'''
+          assert old in worker, "Worker Mihomo Emby group block not found"
+          worker = worker.replace(old, new, 1)
+
+          old = '      lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);'
+          new = '      lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${combinedRegionRegex(config.emby.regions)}"`);'
+          assert old in worker, "Worker Loon non-backup Emby filter line not found"
+          worker = worker.replace(old, new, 1)
+
+          old = '      lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);'
+          new = '      lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = "${config.emby?.enabled && config.emby.sources.includes("backup") ? combinedRegionRegex(config.emby.regions) : ".*"}"`);'
+          assert old in worker, "Worker Loon backup filter line not found"
+          worker = worker.replace(old, new, 1)
+
+          worker_path.write_text(worker, encoding="utf-8")
+
+          # ---------- Version ----------
+          version_path = root / "VERSION.json"
+          version = json.loads(version_path.read_text(encoding="utf-8"))
+          now = datetime.now(ZoneInfo("Asia/Shanghai")).strftime("%Y-%m-%d %H:%M:%S")
+          version["mihomo"]["version"] = 6
+          version["mihomo"]["updated_at"] = now
+          version["loon"]["version"] = 23
+          version["loon"]["updated_at"] = now
+          version_path.write_text(json.dumps(version, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          # ---------- Docs ----------
+          baseline_path = root / "docs/PRODUCTION_BASELINE.md"
+          baseline = baseline_path.read_text(encoding="utf-8")
+          baseline = baseline.replace(
+              "当前生产支持独立 Emby 分流，属于配置行为，因此从本次变更起版本为 Mihomo v5 / Loon v22。",
+              "当前生产支持独立 Emby 分流及独立地区筛选，属于配置行为，因此从本次变更起版本为 Mihomo v6 / Loon v23。"
+          )
+          marker = "- 参与来源由 Builder 勾选，客户端内保持手动切换。"
+          assert marker in baseline, "Production baseline Emby marker not found"
+          baseline = baseline.replace(marker, marker + "\n- Emby 地区由 Builder 独立多选，不复用日用节点地区；Mihomo / Loon 仅在 Emby 来源子组内按所选地区过滤。", 1)
+          baseline_path.write_text(baseline, encoding="utf-8")
+
+          changelog_path = root / "docs/CHANGELOG.md"
+          changelog = changelog_path.read_text(encoding="utf-8")
+          entry = '''## 2026-09-28\n\n### Mihomo v6 / Loon v23 — Emby 地区筛选\n\n- Emby 新增独立“地区 · 可多选”筛选，不复用日用节点地区。\n- Mihomo：Emby 来源子策略组增加地区正则过滤。\n- Loon：Emby 来源 Remote Filter 增加地区正则过滤。\n- Emby 播放线路仍保持私有，不写入 GitHub 或浏览器 localStorage。\n- 版本号更新为 Mihomo v6 / Loon v23。\n\n'''
+          if "### Mihomo v6 / Loon v23 — Emby 地区筛选" not in changelog:
+              changelog = changelog.replace("## 2026-09-28\n", "## 2026-09-28\n\n" + entry.split("## 2026-09-28\n",1)[1], 1)
+          changelog_path.write_text(changelog, encoding="utf-8")
+
+          # ---------- Pages workflow ----------
+          pages_path = root / ".github/workflows/pages.yml"
+          pages = pages_path.read_text(encoding="utf-8")
+          marker = "          cp builder/app.js _site/app.js\n"
+          assert marker in pages, "Pages workflow app.js copy marker not found"
+          if "cp builder/emby-region.js _site/emby-region.js" not in pages:
+              pages = pages.replace(marker, marker + "          cp builder/emby-region.js _site/emby-region.js\n", 1)
+          pages_path.write_text(pages, encoding="utf-8")
+
+          # Remove this one-off workflow in the same commit. The current run continues after deletion.
+          Path(".github/workflows/oneoff-emby-region.yml").unlink()
+
+      - name: Validate patched JavaScript
+        run: |
+          node --check builder/emby-region.js
+          node --check cloudflare/primus-config.js
+
+      - name: Prepare Pages
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp builder/index.html _site/index.html
+          cp builder/app.js _site/app.js
+          cp builder/emby-region.js _site/emby-region.js
+          cp VERSION.json _site/VERSION.json
+          cp mihomo/template.yaml _site/template.yaml
+          cp loon/Primus-Loon.lcf _site/Primus-Loon.lcf
+          cp loon/template.lcf _site/Loon-template.lcf
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Commit patched production baseline
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add builder/index.html builder/emby-region.js cloudflare/primus-config.js VERSION.json docs/PRODUCTION_BASELINE.md docs/CHANGELOG.md .github/workflows/pages.yml .github/workflows/oneoff-emby-region.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Add Emby region filtering"
+          git push origin HEAD:main
