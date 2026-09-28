@@ -518,7 +518,7 @@ function buildLoonFilters(config) {
         : ".*";
       lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = "${embyFilter}"`);
     } else if (embyAllSources.has(sourceKey)) {
-      lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);
+      lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${combinedRegionRegex(config.emby.regions)}"`);
     }
 
     for (const regionCode of Object.keys(REGIONS)) {
