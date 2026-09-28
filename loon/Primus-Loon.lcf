@@ -1,8 +1,8 @@
 # ============================================================
 # Primus Loon 动态手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v21
-# 更新日期：2026-09-27 15:49:59
+# 版本：v22
+# 更新日期：2026-09-28 14:43:01
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
@@ -45,6 +45,8 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 # 资源名称必须与所选来源完全一致：机场 / 自建 / 备用。
 
 [Remote Filter]
+机场 · 全部 = NameRegex,机场, FilterKey = ".*"
+自建 · 全部 = NameRegex,自建, FilterKey = ".*"
 机场 · 新加坡 = NameRegex,机场, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))"
 机场 · 美国 = NameRegex,机场, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
 自建 · 新加坡 = NameRegex,自建, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))"
@@ -57,11 +59,13 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 主力节点 = select,机场 · 新加坡,自建 · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
 备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
 AI = select,机场 · 美国,自建 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
+Emby = select,机场 · 全部,自建 · 全部,备用 · 全部
 番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png
 抖音 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/TikTok.png
 小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png
 
 [Rule]
+# Emby 私有播放线路不会写入公开快照；请通过 Builder 动态生成后再导入。
 # 固定直连
 DOMAIN-SUFFIX,4ktop.com,DIRECT
 
