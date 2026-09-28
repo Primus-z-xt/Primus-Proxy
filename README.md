@@ -63,6 +63,23 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择逻辑，但 **Loon �
 
 ---
 
+## 私有 Emby 分流
+
+Builder 现在支持独立的 `📺 Emby` 分类。
+
+- 填写 Emby 私有播放地址后才启用该分流。
+- 可以选择允许参与 Emby 的来源：`机场 / 自建 / 备用`。
+- Mihomo / Clash 中会生成独立的 `📺 Emby` 策略组，可在客户端内手动切换来源；每个来源内部仍可手动选择具体节点。
+- Loon 中会生成独立的 `Emby` 策略组，可在 Loon 内手动切换 `机场 / 自建 / 备用`。
+- 私有播放地址只提取主机名用于分流；仓库永远不保存真实播放线路。
+- 本地“生成配置”时，播放线路只存在于当前页面和生成后的本地配置中，不写入浏览器本地存储。
+- 生成远程 Mihomo 订阅或 Loon 私有配置时，播放线路才会随该私有配置保存到 Cloudflare KV。
+- 公开的 `loon/Primus-Loon.lcf` 只保留通用 Emby 策略组，不包含任何真实播放线路。
+
+> 使用远程 Emby 分流前，需要把当前 GitHub 中的 `cloudflare/primus-config.js` 重新部署到 Cloudflare Worker。
+
+---
+
 ## 版本管理
 
 `VERSION.json` 是唯一版本来源。
