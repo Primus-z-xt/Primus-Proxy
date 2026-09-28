@@ -23,6 +23,9 @@ jobs:
       - name: Apply patch script
         run: python scripts/oneoff-emby-region.py
 
+      - name: Keep production Pages workflow from the current main branch
+        run: git checkout -- .github/workflows/pages.yml
+
       - name: Validate JavaScript
         run: |
           node --check builder/emby-region.js
@@ -54,6 +57,7 @@ jobs:
 
       - name: Commit patched production files
         run: |
+          rm -rf _site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
