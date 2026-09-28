@@ -4,6 +4,14 @@
 
 ## 2026-09-28
 
+### Mihomo v6 / Loon v23 — Emby 地区筛选
+
+- Emby 新增独立“地区 · 可多选”筛选，不复用日用节点地区。
+- Mihomo：Emby 来源子策略组增加地区正则过滤。
+- Loon：Emby 来源 Remote Filter 增加地区正则过滤。
+- Emby 播放线路仍保持私有，不写入 GitHub 或浏览器 localStorage。
+- 版本号更新为 Mihomo v6 / Loon v23。
+
 ### Mihomo v5 / Loon v22 — 私有 Emby 分流
 
 - 新增独立 Emby 分类。

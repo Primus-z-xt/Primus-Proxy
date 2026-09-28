@@ -103,7 +103,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流，属于配置行为，因此从本次变更起版本为 Mihomo v5 / Loon v22。
+当前生产支持独立 Emby 分流及独立地区筛选，属于配置行为，因此从本次变更起版本为 Mihomo v6 / Loon v23。
 
 隐私原则：
 
@@ -119,6 +119,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 - Mihomo：`📺 Emby` → `📺 Emby · 机场 / 自建 / 备用` → 对应来源 Provider。
 - Loon：`Emby` → `机场 · 全部 / 自建 · 全部 / 备用 · 全部`。
 - 参与来源由 Builder 勾选，客户端内保持手动切换。
+- Emby 地区由 Builder 独立多选，不复用日用节点地区；Mihomo / Loon 仅在 Emby 来源子组内按所选地区过滤。
 - Emby 私有地址只用于生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 规则。
 
 Worker 兼容要求：

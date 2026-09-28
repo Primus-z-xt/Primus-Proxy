@@ -405,6 +405,12 @@
             <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
         </div>
+        <div class="group-title">地区 · 可多选</div>
+        <div class="inline-actions">
+          <button id="emby-select-all-regions" type="button" class="secondary mini">全选</button>
+          <button id="emby-clear-regions" type="button" class="secondary mini">清空</button>
+        </div>
+        <div id="emby-region-options"></div>
 
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
@@ -483,6 +489,12 @@
             <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
         </div>
+        <div class="group-title">地区 · 可多选</div>
+        <div class="inline-actions">
+          <button id="loon-emby-select-all-regions" type="button" class="secondary mini">全选</button>
+          <button id="loon-emby-clear-regions" type="button" class="secondary mini">清空</button>
+        </div>
+        <div id="loon-emby-region-options"></div>
 
         <div class="actions">
           <button id="generate-loon" class="primary">生成 Loon 配置</button>
@@ -512,5 +524,6 @@
   </main>
 
 <script src="./app.js"></script>
+<script src="./emby-region.js"></script>
 </body>
 </html>

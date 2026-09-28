@@ -1,4 +1,4 @@
-// Primus Config Worker v5
+// Primus Config Worker v6
 // Dynamic source + daily region selection for Mihomo and Loon.
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 
@@ -129,8 +129,10 @@ function normalizeEmby(value, enabledSources) {
     if (!targets.includes(target)) targets.push(target);
   }
   const sources = uniqueAllowed(value?.sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  const regions = Array.isArray(value?.regions) ? uniqueAllowed(value.regions, Object.keys(REGIONS)) : Object.keys(REGIONS);
   if (targets.length && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
-  return { enabled: targets.length > 0, targets, sources };
+  if (targets.length && !regions.length) throw new Error("Emby 至少选择一个地区");
+  return { enabled: targets.length > 0, targets, sources, regions };
 }
 
 function isIPv4(value) {
@@ -201,7 +203,7 @@ function normalizeLegacy(record) {
     daily_sources: ["self", "airport"].filter(key => sources[key].enabled),
     daily_regions: ["SG"],
     ai_sources: ["airport", "self", "backup"].filter(key => sources[key].enabled),
-    emby: { enabled: false, targets: [], sources: [] },
+    emby: { enabled: false, targets: [], sources: [], regions: [] },
     _legacy: true,
     _enabled: enabled
   };
@@ -407,7 +409,8 @@ function buildGroups(config) {
         `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
         `    type: select`,
         `    use:`,
-        `      - "${SOURCE_META[sourceKey].label}"`
+        `      - "${SOURCE_META[sourceKey].label}"`,
+        `    filter: '${combinedRegionRegex(config.emby.regions)}'`
       );
     }
   }
@@ -510,7 +513,10 @@ function buildLoonFilters(config) {
     if (!config.enabled_sources.includes(sourceKey)) continue;
 
     if (sourceKey === "backup") {
-      lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+      const embyFilter = embyAllSources.has("backup") && config.emby?.regions?.length
+        ? combinedRegionRegex(config.emby.regions)
+        : ".*";
+      lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = "${embyFilter}"`);
     } else if (embyAllSources.has(sourceKey)) {
       lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);
     }
