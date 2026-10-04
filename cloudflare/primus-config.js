@@ -192,7 +192,7 @@ function buildMihomoPlexHostLines(plex) {
 
 function buildLoonPlexHostLines(plex) {
   if (!plex?.enabled) return [];
-  return [`${plex.domain} = ${plex.ip}`];
+  return [`${plex.domain} = ${plex.ip},use-in-proxy=true`];
 }
 
 function normalizeNewPayload(body) {
