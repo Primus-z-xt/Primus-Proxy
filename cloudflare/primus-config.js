@@ -353,6 +353,20 @@ function selfFirst(keys) {
   return [...keys].sort((a, b) => (a === "self" ? -1 : b === "self" ? 1 : 0));
 }
 
+
+function regexBody(pattern) {
+  return String(pattern || "").replace(/^\(\?i\)\(/, "").replace(/\)$/, "");
+}
+
+function backupLargeTrafficRegionRegex(codes) {
+  const largeBody = regexBody(BACKUP_LARGE_TRAFFIC_REGEX);
+  const parts = codes
+    .map(code => REGIONS[code]?.regex || "")
+    .filter(Boolean)
+    .map(pattern => `(?:${regexBody(pattern)}).*(?:${largeBody})`);
+  return `(?i)(${parts.join("|")})`;
+}
+
 function buildGroups(config) {
   if (config._legacy) return buildGroupsLegacy(config);
 
@@ -413,11 +427,21 @@ function buildGroups(config) {
     );
     for (const sourceKey of selfFirst(config.emby.sources)) {
       lines.push(sourceKey === "backup"
-        ? `      - "🛟 备用大流量"`
+        ? `      - "📺 Emby · 备用大流量"`
         : `      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
     }
     for (const sourceKey of config.emby.sources) {
-      if (sourceKey === "backup") continue;
+      if (sourceKey === "backup") {
+        lines.push(
+          ``,
+          `  - name: "📺 Emby · 备用大流量"`,
+          `    type: select`,
+          `    use:`,
+          `      - "备用"`,
+          `    filter: '${backupLargeTrafficRegionRegex(config.emby.regions)}'`
+        );
+        continue;
+      }
       lines.push(
         ``,
         `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
@@ -529,6 +553,9 @@ function buildLoonFilters(config) {
     if (sourceKey === "backup") {
       lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
       lines.push(`备用 · 大流量 = NameRegex,备用, FilterKey = "${BACKUP_LARGE_TRAFFIC_REGEX}"`);
+      if (embyAllSources.has("backup")) {
+        lines.push(`备用 · Emby大流量 = NameRegex,备用, FilterKey = "${backupLargeTrafficRegionRegex(config.emby.regions)}"`);
+      }
     } else if (embyAllSources.has(sourceKey)) {
       lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${combinedRegionRegex(config.emby.regions)}"`);
     }
@@ -572,7 +599,7 @@ function buildLoonGroups(config) {
   );
 
   if (config.emby?.enabled) {
-    const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
+    const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用 · Emby大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
     lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
   }
 
