@@ -1,8 +1,8 @@
 # ============================================================
 # Primus Loon 动态手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v26
-# 更新日期：2026-10-04 17:36:00
+# 版本：v27
+# 更新日期：2026-10-05 00:40:00
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
@@ -68,7 +68,7 @@ Emby = select,自建 · 全部,机场 · 全部,备用 · Emby大流量,img-url 
 小红书 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/RedPaper.png
 
 [Rule]
-# Emby 私有播放线路不会写入公开快照；请通过 Builder 动态生成后再导入。
+# Emby / Plex 私有线路不会写入公开快照；请通过 Builder 动态生成后再导入。
 # 固定直连
 DOMAIN-SUFFIX,4ktop.com,DIRECT
 
@@ -96,6 +96,7 @@ https://kelee.one/Tool/Loon/Lsr/LAN_SPLITTER.lsr, policy=DIRECT, tag=LAN, enable
 https://kelee.one/Tool/Loon/Lsr/REGION_SPLITTER.lsr, policy=DIRECT, tag=CN REGION, enabled=true
 
 [Host]
+# 私有 Plex 固定解析由 Builder / Worker 动态注入；公开快照不保存真实域名和源 IP。
 
 [Rewrite]
 
