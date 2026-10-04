@@ -2,6 +2,13 @@
 
 ## 2026-10-05
 
+### Mihomo v10 / Loon v28 — Plex 代理内继续使用固定 Host
+
+- Loon 的 Plex 固定源站映射改为 `域名 = 源IP,use-in-proxy=true`。
+- 这样 Plex 流量进入现有 Emby 策略组并走机场 / 自建 / 备用节点后，仍继续使用本地指定的源 IP，不在代理侧重新解析 Plex 域名。
+- Builder 本地生成与 Cloudflare Worker 远程生成同步修改；Mihomo 逻辑不变，仍保持 v10。
+- Cloudflare 侧需要重新部署最新 `cloudflare/primus-config.js` 后，远程 Loon 配置才会生效。
+
 ### Mihomo v10 / Loon v27 — Plex 固定源站复用 Emby
 
 - Builder 的 Emby 区域新增可选 Plex 域名与源 IP 输入。
