@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "mihomo": {
-    "version": 6,
-    "updated_at": "2026-09-28 18:21:46"
+    "version": 7,
+    "updated_at": "2026-10-04 16:53:00"
   },
   "loon": {
-    "version": 23,
-    "updated_at": "2026-09-28 18:21:46"
+    "version": 24,
+    "updated_at": "2026-10-04 16:53:00"
   }
 }
