@@ -11,6 +11,7 @@
     backup: { label: "备用", path: "backup", enableId: "enable-backup", urlId: "backup-url" }
   };
   const BACKUP_EXCLUDE = "(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)";
+  const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc)";
   const REGION_GROUPS = [
     { title: "东亚 / 东南亚", codes: ["HK","TW","JP","KR","SG","MY","TH","VN","PH","ID"] },
     { title: "北美", codes: ["US","CA"] },
@@ -376,7 +377,13 @@
         `  - name: "🛟 备用节点"`,
         `    type: select`,
         `    use:`,
-        `      - "备用"`
+        `      - "备用"`,
+        ``,
+        `  - name: "🛟 备用大流量"`,
+        `    type: select`,
+        `    use:`,
+        `      - "备用"`,
+        `    filter: '${BACKUP_LARGE_TRAFFIC_REGEX}'`
       );
     }
 
@@ -397,9 +404,12 @@
         `    proxies:`
       );
       for (const sourceKey of selfFirst(config.emby.sources)) {
-        lines.push(`      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
+        lines.push(sourceKey === "backup"
+          ? `      - "🛟 备用大流量"`
+          : `      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
       }
       for (const sourceKey of config.emby.sources) {
+        if (sourceKey === "backup") continue;
         lines.push(
           ``,
           `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
@@ -561,8 +571,8 @@
     for (const sourceKey of SOURCE_ORDER) {
       if (!config.enabled_sources.includes(sourceKey)) continue;
       if (sourceKey === "backup") {
-        const embyFilter = embyAllSources.has("backup") && config.emby?.regions?.length ? combinedRegionRegex(config.emby.regions) : ".*";
-        lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = "${embyFilter}"`);
+        lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+        lines.push(`备用 · 大流量 = NameRegex,备用, FilterKey = "${BACKUP_LARGE_TRAFFIC_REGEX}"`);
       } else if (embyAllSources.has(sourceKey)) {
         lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${combinedRegionRegex(config.emby.regions)}"`);
       }
@@ -594,6 +604,7 @@
 
     if (hasBackup) {
       lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+      lines.push(`备用大流量 = select,备用 · 大流量,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
     }
 
     lines.push(
@@ -601,7 +612,7 @@
     );
 
     if (config.emby?.enabled) {
-      const embyFilters = selfFirst(config.emby.sources).map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
+      const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
       lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
     }
 
