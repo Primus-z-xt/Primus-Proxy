@@ -121,6 +121,19 @@ function normalizePrivateTarget(value) {
   }
 }
 
+function normalizePlex(value) {
+  const rawDomain = String(value?.domain || "").trim();
+  const rawIp = String(value?.ip || "").trim().replace(/^\[|\]$/g, "");
+  const requested = Boolean(value?.enabled) || rawDomain || rawIp;
+  if (!requested) return { enabled: false, domain: "", ip: "" };
+  if (!rawDomain || !rawIp) throw new Error("Plex 域名和源 IP 必须同时填写");
+
+  const domain = normalizePrivateTarget(rawDomain);
+  if (!domain || isIPv4(domain) || isIPv6(domain)) throw new Error("Plex 域名格式无效");
+  if (!isIPv4(rawIp) && !isIPv6(rawIp)) throw new Error("Plex 源 IP 格式无效");
+  return { enabled: true, domain, ip: rawIp };
+}
+
 function normalizeEmby(value, enabledSources) {
   const rawTargets = Array.isArray(value?.targets) ? value.targets : [];
   const targets = [];
@@ -131,9 +144,11 @@ function normalizeEmby(value, enabledSources) {
   }
   const sources = uniqueAllowed(value?.sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
   const regions = Array.isArray(value?.regions) ? uniqueAllowed(value.regions, Object.keys(REGIONS)) : Object.keys(REGIONS);
-  if (targets.length && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
-  if (targets.length && !regions.length) throw new Error("Emby 至少选择一个地区");
-  return { enabled: targets.length > 0, targets, sources, regions };
+  const plex = normalizePlex(value?.plex);
+  const enabled = targets.length > 0 || plex.enabled;
+  if (enabled && !sources.length) throw new Error("Emby 至少选择一个已启用来源");
+  if (enabled && !regions.length) throw new Error("Emby 至少选择一个地区");
+  return { enabled, targets, sources, regions, plex };
 }
 
 function isIPv4(value) {
@@ -155,9 +170,29 @@ function buildPrivateRuleLines(targets, policy) {
 
 function injectPrivateRules(template, rules) {
   return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
-    if (!rules.length) return `${indent}# 私有 Emby 分流未启用`;
+    if (!rules.length) return `${indent}# 私有 Emby / Plex 分流未启用`;
     return rules.map(rule => `${indent}${rule}`).join("\n");
   });
+}
+
+function injectPrivateHosts(template, lines) {
+  return template.replace(/^# __PRIVATE_HOSTS__$/m, () => {
+    if (!lines.length) return "# 私有 Plex 固定解析未启用";
+    return lines.join("\n");
+  });
+}
+
+function buildMihomoPlexHostLines(plex) {
+  if (!plex?.enabled) return [];
+  return [
+    "hosts:",
+    `  "${yamlEscape(plex.domain)}": "${yamlEscape(plex.ip)}"`
+  ];
+}
+
+function buildLoonPlexHostLines(plex) {
+  if (!plex?.enabled) return [];
+  return [`${plex.domain} = ${plex.ip}`];
 }
 
 function normalizeNewPayload(body) {
@@ -204,7 +239,7 @@ function normalizeLegacy(record) {
     daily_sources: ["self", "airport"].filter(key => sources[key].enabled),
     daily_regions: ["SG"],
     ai_sources: ["airport", "self", "backup"].filter(key => sources[key].enabled),
-    emby: { enabled: false, targets: [], sources: [], regions: [] },
+    emby: { enabled: false, targets: [], sources: [], regions: [], plex: { enabled: false, domain: "", ip: "" } },
     _legacy: true,
     _enabled: enabled
   };
@@ -493,7 +528,9 @@ function renderTemplate(template, config) {
       .replace("__PROXY_PROVIDERS__", buildProviders(config))
       .replace("__PROXY_GROUPS__", buildGroups(config));
     const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
-    return injectPrivateRules(rendered, privateRules);
+    if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},📺 Emby`);
+    const withRules = injectPrivateRules(rendered, privateRules);
+    return injectPrivateHosts(withRules, buildMihomoPlexHostLines(config.emby?.plex));
   }
 
   // Zero-downtime rollout: before main switches to the v2 template, keep legacy
@@ -620,7 +657,9 @@ function renderLoonTemplate(template, config) {
     .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
     .replace("__PROXY_GROUPS__", buildLoonGroups(config));
   const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "Emby") : [];
-  return injectPrivateRules(rendered, privateRules);
+  if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},Emby`);
+  const withRules = injectPrivateRules(rendered, privateRules);
+  return injectPrivateHosts(withRules, buildLoonPlexHostLines(config.emby?.plex));
 }
 
 async function handleLoonPost(request, env) {
