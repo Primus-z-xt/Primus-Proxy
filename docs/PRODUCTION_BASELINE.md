@@ -104,7 +104,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选；当前配置版本为 Mihomo v9 / Loon v26。
+当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v10 / Loon v27。
 
 隐私原则：
 
@@ -122,6 +122,9 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 - 参与来源由 Builder 勾选，客户端内保持手动切换。
 - Emby 地区由 Builder 独立多选，不复用日用节点地区；机场/自建按所选地区过滤，备用则同时满足“大流量节点”与 Emby 所选地区两个条件。
 - Emby 私有地址只用于生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 规则。
+- Plex 不新增独立策略组：Builder 可在 Emby 区域填写 Plex 域名与源 IP，最终固定解析到源 IP，并将 Plex 域名规则直接指向现有 Emby 策略组。
+- Plex 域名与源 IP不写入 GitHub，也不写入浏览器 localStorage；本地生成仅进入本地配置，远程配置仅保存在私有 KV。
+- Mihomo 使用动态 `hosts` 映射；Loon 使用动态 `[Host]` 映射。
 
 Worker 兼容要求：
 
