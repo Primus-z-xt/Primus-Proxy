@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-05
+
+### Mihomo v10 / Loon v27 — Plex 固定源站复用 Emby
+
+- Builder 的 Emby 区域新增可选 Plex 域名与源 IP 输入。
+- Plex 不新增独立策略组，规则直接指向现有 Emby 策略，因此可继续在 Emby 内手动选择机场 / 自建 / 备用节点。
+- Mihomo 动态注入 `hosts` 固定解析；Loon 动态注入 `[Host]` 固定解析，避免 Plex 域名继续命中朋友的中转 IP。
+- Plex 域名与源 IP 不写入 GitHub，也不写入浏览器 localStorage；生成远程配置时仅进入私有 KV。
+- Worker 代码同步更新，Cloudflare 侧需手动重新部署。
+
 ## 2026-10-04
 
 ### Mihomo v9 / Loon v26 — Emby 备用大流量叠加地区筛选
