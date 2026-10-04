@@ -342,9 +342,13 @@
     return lines.join("\n").trimEnd();
   }
 
+  function selfFirst(keys) {
+    return [...keys].sort((a, b) => (a === "self" ? -1 : b === "self" ? 1 : 0));
+  }
+
   function buildGroups(config) {
-    const dailyProviders = config.daily_sources.map(key => SOURCE_META[key].label);
-    const aiProviders = config.ai_sources.map(key => SOURCE_META[key].label);
+    const dailyProviders = selfFirst(config.daily_sources).map(key => SOURCE_META[key].label);
+    const aiProviders = selfFirst(config.ai_sources).map(key => SOURCE_META[key].label);
     const hasBackup = config.sources.backup.enabled;
     const dailyFilter = combinedRegionRegex(config.daily_regions);
     const aiFilter = REGIONS.US.regex;
@@ -392,7 +396,7 @@
         `    type: select`,
         `    proxies:`
       );
-      for (const sourceKey of config.emby.sources) {
+      for (const sourceKey of selfFirst(config.emby.sources)) {
         lines.push(`      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
       }
       for (const sourceKey of config.emby.sources) {
@@ -572,13 +576,13 @@
 
   function buildLoonGroups(config) {
     const dailyFilters = [];
-    for (const sourceKey of config.daily_sources) {
+    for (const sourceKey of selfFirst(config.daily_sources)) {
       for (const regionCode of config.daily_regions) {
         dailyFilters.push(providerName(sourceKey, regionCode));
       }
     }
 
-    const aiFilters = config.ai_sources.map(sourceKey => providerName(sourceKey, "US"));
+    const aiFilters = selfFirst(config.ai_sources).map(sourceKey => providerName(sourceKey, "US"));
     const hasBackup = config.enabled_sources.includes("backup");
     const globalItems = ["主力节点"];
     if (hasBackup) globalItems.push("备用节点");
@@ -597,7 +601,7 @@
     );
 
     if (config.emby?.enabled) {
-      const embyFilters = config.emby.sources.map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
+      const embyFilters = selfFirst(config.emby.sources).map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
       lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
     }
 
