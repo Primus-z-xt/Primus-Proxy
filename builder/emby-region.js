@@ -42,9 +42,7 @@
   upgradeFlagImages();
 
   const baseGetConfigFromUi = window.getConfigFromUi;
-  const baseBuildGroups = window.buildGroups;
   const baseGetLoonConfigFromUi = window.getLoonConfigFromUi;
-  const baseBuildLoonFilters = window.buildLoonFilters;
   const baseRestoreSelections = window.restoreSelections;
   const baseRestoreLoonSelections = window.restoreLoonSelections;
   const baseValidateConfig = window.validateConfig;
@@ -60,13 +58,6 @@
   window.validateConfig = function (config) {
     const error = baseValidateConfig(config);
     return error || requireEmbyRegions(config, "Emby");
-  };
-
-  window.buildGroups = function (config) {
-    const result = baseBuildGroups(config);
-    if (!config.emby?.enabled || !config.emby.regions?.length) return result;
-    const filter = combinedRegionRegex(config.emby.regions);
-    return result.replace(/(  - name: "📺 Emby · [^"]+"\n    type: select\n    use:\n      - "[^"]+")/g, `$1\n    filter: '${filter}'`);
   };
 
   window.saveSelections = function () {
@@ -99,19 +90,6 @@
   window.validateLoonConfig = function (config) {
     const error = baseValidateLoonConfig(config);
     return error || requireEmbyRegions(config, "Loon Emby");
-  };
-
-  window.buildLoonFilters = function (config) {
-    let result = baseBuildLoonFilters(config);
-    if (!config.emby?.enabled || !config.emby.regions?.length) return result;
-    const filter = combinedRegionRegex(config.emby.regions);
-    for (const sourceKey of config.emby.sources) {
-      const label = SOURCE_META[sourceKey].label;
-      const line = `${label} · 全部 = NameRegex,${label}, FilterKey = ".*"`;
-      const replacement = `${label} · 全部 = NameRegex,${label}, FilterKey = "${filter}"`;
-      result = result.replace(line, replacement);
-    }
-    return result;
   };
 
   window.loonFingerprint = function (config) {
