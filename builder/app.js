@@ -290,6 +290,7 @@
         enabled: embyParsed.targets.length > 0,
         targets: embyParsed.targets,
         sources: embySources,
+        regions: selectedValues(".emby-region", "region"),
         invalid: embyParsed.invalid
       }
     };
@@ -306,6 +307,7 @@
     if (!config.ai_sources.length) return "AI 至少选择一个已启用来源";
     if (config.emby.invalid.length) return `Emby 播放线路格式无效：${config.emby.invalid[0]}`;
     if (config.emby.enabled && !config.emby.sources.length) return "Emby 至少选择一个已启用来源";
+    if (config.emby.enabled && !config.emby.regions.length) return "Emby 至少选择一个地区";
     return "";
   }
 
@@ -399,7 +401,8 @@
           `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
           `    type: select`,
           `    use:`,
-          `      - "${SOURCE_META[sourceKey].label}"`
+          `      - "${SOURCE_META[sourceKey].label}"`,
+          `    filter: '${combinedRegionRegex(config.emby.regions)}'`
         );
       }
     }
@@ -430,7 +433,8 @@
       daily_sources: config.daily_sources,
       daily_regions: config.daily_regions,
       ai_sources: config.ai_sources,
-      emby_sources: config.emby.sources
+      emby_sources: config.emby.sources,
+      emby_regions: config.emby.regions
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
   }
@@ -520,6 +524,7 @@
         enabled: embyParsed.targets.length > 0,
         targets: embyParsed.targets,
         sources: selectedValues(".loon-emby-source", "source").filter(key => enabledSources.includes(key)),
+        regions: selectedValues(".loon-emby-region", "region"),
         invalid: embyParsed.invalid
       }
     };
@@ -532,6 +537,7 @@
     if (!config.ai_sources.length) return "Loon AI 至少选择一个已启用来源";
     if (config.emby.invalid.length) return `Loon Emby 播放线路格式无效：${config.emby.invalid[0]}`;
     if (config.emby.enabled && !config.emby.sources.length) return "Loon Emby 至少选择一个已启用来源";
+    if (config.emby.enabled && !config.emby.regions.length) return "Loon Emby 至少选择一个地区";
     return "";
   }
 
@@ -551,9 +557,10 @@
     for (const sourceKey of SOURCE_ORDER) {
       if (!config.enabled_sources.includes(sourceKey)) continue;
       if (sourceKey === "backup") {
-        lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
+        const embyFilter = embyAllSources.has("backup") && config.emby?.regions?.length ? combinedRegionRegex(config.emby.regions) : ".*";
+        lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = "${embyFilter}"`);
       } else if (embyAllSources.has(sourceKey)) {
-        lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = ".*"`);
+        lines.push(`${SOURCE_META[sourceKey].label} · 全部 = NameRegex,${SOURCE_META[sourceKey].label}, FilterKey = "${combinedRegionRegex(config.emby.regions)}"`);
       }
       for (const regionCode of Object.keys(REGIONS)) {
         if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
@@ -591,7 +598,7 @@
 
     if (config.emby?.enabled) {
       const embyFilters = config.emby.sources.map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
-      lines.push(`Emby = select,${embyFilters.join(",")}`);
+      lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
     }
 
     lines.push(
@@ -622,7 +629,8 @@
       ai_sources: config.ai_sources,
       emby: {
         targets: config.emby.targets,
-        sources: config.emby.sources
+        sources: config.emby.sources,
+        regions: config.emby.regions
       }
     });
   }
@@ -648,6 +656,7 @@
     if (Array.isArray(saved.daily_regions)) document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = saved.daily_regions.includes(el.dataset.region); });
     if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".loon-ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.emby_sources)) document.querySelectorAll(".loon-emby-source").forEach(el => { el.checked = saved.emby_sources.includes(el.dataset.source); });
+    if (Array.isArray(saved.emby_regions)) document.querySelectorAll(".loon-emby-region").forEach(el => { el.checked = saved.emby_regions.includes(el.dataset.region); });
   }
 
   function invalidateLoonGeneration(message = "") {
