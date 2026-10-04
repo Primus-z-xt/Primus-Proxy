@@ -398,6 +398,13 @@
           <label for="emby-target">私有播放线路</label>
           <input id="emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
           <label class="show-row"><input id="show-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">Plex 固定源站 · 可选</div>
+          <p class="hint">Plex 直接复用本 Emby 策略组，不新增 Plex 分组。填写域名与源 IP 后，会固定解析到源站并由 Emby 当前选择的节点访问；这两项不会保存到浏览器本地存储。</p>
+          <label for="plex-domain">Plex 域名</label>
+          <input id="plex-domain" type="text" autocomplete="off" spellcheck="false" placeholder="例如 plex.example.com">
+          <label for="plex-origin-ip">Plex 源 IP</label>
+          <input id="plex-origin-ip" type="password" autocomplete="off" spellcheck="false" placeholder="例如 1.2.3.4">
+          <label class="show-row"><input id="show-plex-origin-ip" type="checkbox">显示源 IP</label>
           <div class="group-title">可选来源 · 客户端内手动切换</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="emby-source" data-source="airport" type="checkbox" checked>机场</label>
@@ -482,6 +489,13 @@
           <label for="loon-emby-target">私有播放线路</label>
           <input id="loon-emby-target" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴 Emby 播放地址，例如 https://example.com:443">
           <label class="show-row"><input id="show-loon-emby-target" type="checkbox">显示线路</label>
+          <div class="group-title">Plex 固定源站 · 可选</div>
+          <p class="hint">Plex 直接复用本 Emby 策略组，不新增 Plex 分组。填写域名与源 IP 后，会固定解析到源站并由 Emby 当前选择的节点访问；这两项不会保存到浏览器本地存储。</p>
+          <label for="loon-plex-domain">Plex 域名</label>
+          <input id="loon-plex-domain" type="text" autocomplete="off" spellcheck="false" placeholder="例如 plex.example.com">
+          <label for="loon-plex-origin-ip">Plex 源 IP</label>
+          <input id="loon-plex-origin-ip" type="password" autocomplete="off" spellcheck="false" placeholder="例如 1.2.3.4">
+          <label class="show-row"><input id="show-loon-plex-origin-ip" type="checkbox">显示源 IP</label>
           <div class="group-title">可选来源 · Loon 内手动切换</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-emby-source" data-source="airport" type="checkbox" checked>机场</label>
