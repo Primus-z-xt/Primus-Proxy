@@ -246,6 +246,26 @@
     return { targets, invalid };
   }
 
+  function parsePlexConfig(domainValue, ipValue) {
+    const rawDomain = String(domainValue || "").trim();
+    const rawIp = String(ipValue || "").trim().replace(/^\[|\]$/g, "");
+    if (!rawDomain && !rawIp) return { enabled: false, domain: "", ip: "", invalid: "" };
+    if (!rawDomain || !rawIp) return { enabled: false, domain: "", ip: "", invalid: "Plex 域名和源 IP 必须同时填写" };
+
+    const parsed = parsePrivateTargets(rawDomain);
+    if (parsed.invalid.length || parsed.targets.length !== 1) {
+      return { enabled: false, domain: "", ip: "", invalid: "Plex 域名格式无效" };
+    }
+    const domain = parsed.targets[0];
+    if (isIPv4(domain) || isIPv6(domain)) {
+      return { enabled: false, domain: "", ip: "", invalid: "Plex 域名不能直接填写 IP" };
+    }
+    if (!isIPv4(rawIp) && !isIPv6(rawIp)) {
+      return { enabled: false, domain: "", ip: "", invalid: "Plex 源 IP 格式无效" };
+    }
+    return { enabled: true, domain, ip: rawIp, invalid: "" };
+  }
+
   function isIPv4(value) {
     const parts = String(value).split(".");
     return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255);
@@ -265,9 +285,29 @@
 
   function injectPrivateRules(template, rules) {
     return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
-      if (!rules.length) return `${indent}# 私有 Emby 分流未启用`;
+      if (!rules.length) return `${indent}# 私有 Emby / Plex 分流未启用`;
       return rules.map(rule => `${indent}${rule}`).join("\n");
     });
+  }
+
+  function injectPrivateHosts(template, lines) {
+    return template.replace(/^# __PRIVATE_HOSTS__$/m, () => {
+      if (!lines.length) return "# 私有 Plex 固定解析未启用";
+      return lines.join("\n");
+    });
+  }
+
+  function buildMihomoPlexHostLines(plex) {
+    if (!plex?.enabled) return [];
+    return [
+      "hosts:",
+      `  "${yamlEscape(plex.domain)}": "${yamlEscape(plex.ip)}"`
+    ];
+  }
+
+  function buildLoonPlexHostLines(plex) {
+    if (!plex?.enabled) return [];
+    return [`${plex.domain} = ${plex.ip}`];
   }
 
   function getConfigFromUi() {
@@ -280,6 +320,10 @@
       };
     }
     const embyParsed = parsePrivateTargets(document.getElementById("emby-target").value);
+    const plex = parsePlexConfig(
+      document.getElementById("plex-domain").value,
+      document.getElementById("plex-origin-ip").value
+    );
     const embySources = selectedValues(".emby-source", "source").filter(key => sources[key].enabled);
     return {
       version: 3,
@@ -288,11 +332,12 @@
       daily_regions: selectedValues(".daily-region", "region"),
       ai_sources: selectedValues(".ai-source", "source").filter(key => sources[key].enabled),
       emby: {
-        enabled: embyParsed.targets.length > 0,
+        enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
         sources: embySources,
         regions: selectedValues(".emby-region", "region"),
-        invalid: embyParsed.invalid
+        invalid: embyParsed.invalid,
+        plex
       }
     };
   }
@@ -307,6 +352,7 @@
     if (!config.daily_regions.length) return "日用节点至少选择一个地区";
     if (!config.ai_sources.length) return "AI 至少选择一个已启用来源";
     if (config.emby.invalid.length) return `Emby 播放线路格式无效：${config.emby.invalid[0]}`;
+    if (config.emby.plex?.invalid) return config.emby.plex.invalid;
     if (config.emby.enabled && !config.emby.sources.length) return "Emby 至少选择一个已启用来源";
     if (config.emby.enabled && !config.emby.regions.length) return "Emby 至少选择一个地区";
     return "";
@@ -461,7 +507,9 @@
       .replace("__PROXY_PROVIDERS__", buildProviders(config))
       .replace("__PROXY_GROUPS__", buildGroups(config));
     const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
-    return injectPrivateRules(rendered, privateRules);
+    if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},📺 Emby`);
+    const withRules = injectPrivateRules(rendered, privateRules);
+    return injectPrivateHosts(withRules, buildMihomoPlexHostLines(config.emby?.plex));
   }
 
   function saveSelections() {
@@ -552,6 +600,10 @@
   function getLoonConfigFromUi() {
     const enabledSources = selectedValues(".loon-enabled-source", "source");
     const embyParsed = parsePrivateTargets(document.getElementById("loon-emby-target").value);
+    const plex = parsePlexConfig(
+      document.getElementById("loon-plex-domain").value,
+      document.getElementById("loon-plex-origin-ip").value
+    );
     return {
       version: 2,
       enabled_sources: enabledSources,
@@ -559,11 +611,12 @@
       daily_regions: selectedValues(".loon-daily-region", "region"),
       ai_sources: selectedValues(".loon-ai-source", "source").filter(key => enabledSources.includes(key)),
       emby: {
-        enabled: embyParsed.targets.length > 0,
+        enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
         sources: selectedValues(".loon-emby-source", "source").filter(key => enabledSources.includes(key)),
         regions: selectedValues(".loon-emby-region", "region"),
-        invalid: embyParsed.invalid
+        invalid: embyParsed.invalid,
+        plex
       }
     };
   }
@@ -574,6 +627,7 @@
     if (!config.daily_regions.length) return "Loon 日用节点至少选择一个地区";
     if (!config.ai_sources.length) return "Loon AI 至少选择一个已启用来源";
     if (config.emby.invalid.length) return `Loon Emby 播放线路格式无效：${config.emby.invalid[0]}`;
+    if (config.emby.plex?.invalid) return config.emby.plex.invalid;
     if (config.emby.enabled && !config.emby.sources.length) return "Loon Emby 至少选择一个已启用来源";
     if (config.emby.enabled && !config.emby.regions.length) return "Loon Emby 至少选择一个地区";
     return "";
@@ -660,7 +714,9 @@
       .replace("__REMOTE_FILTERS__", buildLoonFilters(config))
       .replace("__PROXY_GROUPS__", buildLoonGroups(config));
     const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "Emby") : [];
-    return injectPrivateRules(rendered, privateRules);
+    if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},Emby`);
+    const withRules = injectPrivateRules(rendered, privateRules);
+    return injectPrivateHosts(withRules, buildLoonPlexHostLines(config.emby?.plex));
   }
 
   function loonFingerprint(config) {
@@ -672,7 +728,8 @@
       emby: {
         targets: config.emby.targets,
         sources: config.emby.sources,
-        regions: config.emby.regions
+        regions: config.emby.regions,
+        plex: config.emby.plex
       }
     });
   }
@@ -845,11 +902,23 @@
   document.getElementById("show-emby-target").addEventListener("change", e => {
     document.getElementById("emby-target").type = e.target.checked ? "text" : "password";
   });
+  document.getElementById("show-plex-origin-ip").addEventListener("change", e => {
+    document.getElementById("plex-origin-ip").type = e.target.checked ? "text" : "password";
+  });
   document.getElementById("show-loon-emby-target").addEventListener("change", e => {
     document.getElementById("loon-emby-target").type = e.target.checked ? "text" : "password";
   });
+  document.getElementById("show-loon-plex-origin-ip").addEventListener("change", e => {
+    document.getElementById("loon-plex-origin-ip").type = e.target.checked ? "text" : "password";
+  });
   document.getElementById("loon-emby-target").addEventListener("input", () => {
     invalidateLoonGeneration("Loon Emby 线路已变更，请重新生成配置");
+  });
+  document.getElementById("loon-plex-domain").addEventListener("input", () => {
+    invalidateLoonGeneration("Loon Plex 固定解析已变更，请重新生成配置");
+  });
+  document.getElementById("loon-plex-origin-ip").addEventListener("input", () => {
+    invalidateLoonGeneration("Loon Plex 固定解析已变更，请重新生成配置");
   });
   for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].enableId).addEventListener("change", syncSourceUi);
   document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", saveSelections));
