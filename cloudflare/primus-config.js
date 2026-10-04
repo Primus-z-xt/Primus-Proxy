@@ -560,7 +560,7 @@ function buildLoonGroups(config) {
 
   if (config.emby?.enabled) {
     const embyFilters = config.emby.sources.map(sourceKey => `${SOURCE_META[sourceKey].label} · 全部`);
-    lines.push(`Emby = select,${embyFilters.join(",")}`);
+    lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
   }
 
   lines.push(
