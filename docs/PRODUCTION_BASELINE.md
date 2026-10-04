@@ -72,6 +72,7 @@ Builder 页面和新版 Worker运行时都会读取 `VERSION.json`，因此显�
 - 地区筛选放在 Proxy Group 的 `filter` 中完成。
 - Provider 缓存路径包含上游 URL 短哈希，避免更换订阅地址后复用旧缓存。
 - `备用` Provider 保留订阅信息类节点排除规则。
+- 新增 `🛟 备用大流量`：只包含备用订阅中“大流量组”对应节点；普通 `🛟 备用节点` 仍保留备用全部有效节点。
 - 所有策略均为人工 `select`。
 - 不使用 `url-test`、`fallback`、`load-balance` 或自动延迟选路。
 - AI 地区固定美国，来源可选。
@@ -103,7 +104,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选，属于配置行为，因此从本次变更起版本为 Mihomo v6 / Loon v23。
+当前生产支持独立 Emby 分流及独立地区筛选；当前配置版本为 Mihomo v8 / Loon v25。
 
 隐私原则：
 
@@ -116,10 +117,10 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 策略结构：
 
-- Mihomo：`📺 Emby` → `📺 Emby · 机场 / 自建 / 备用` → 对应来源 Provider。
-- Loon：`Emby` → `机场 · 全部 / 自建 · 全部 / 备用 · 全部`。
+- Mihomo：`📺 Emby` 中机场/自建继续进入对应来源子组；备用改为直接进入 `🛟 备用大流量`。
+- Loon：`Emby` 中机场/自建继续使用对应地区过滤器；备用改为 `备用大流量` → `备用 · 大流量`。
 - 参与来源由 Builder 勾选，客户端内保持手动切换。
-- Emby 地区由 Builder 独立多选，不复用日用节点地区；Mihomo / Loon 仅在 Emby 来源子组内按所选地区过滤。
+- Emby 地区由 Builder 独立多选，不复用日用节点地区；机场/自建按所选地区过滤，备用固定使用“大流量组”，不再套用 Emby 地区过滤。
 - Emby 私有地址只用于生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 规则。
 
 Worker 兼容要求：
