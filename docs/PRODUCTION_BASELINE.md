@@ -104,7 +104,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v10 / Loon v27。
+当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v10 / Loon v28。
 
 隐私原则：
 
@@ -114,6 +114,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 - 本地生成配置时，线路只进入用户本地生成结果。
 - 生成远程 Mihomo / Loon 私有配置时，线路保存在 `MIHOMO_KV` 对应的私有 token 记录中。
 - 公开 Loon 快照不包含真实线路。
+- Loon 的 Plex `[Host]` 映射使用 `use-in-proxy=true`，确保流量进入 Emby 代理策略后仍继续使用指定源 IP。
 
 策略结构：
 
