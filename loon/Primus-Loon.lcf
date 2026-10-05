@@ -1,8 +1,8 @@
 # ============================================================
 # Primus Loon 动态手动版
 # 文件名：Primus-Loon.lcf
-# 版本：v28
-# 更新日期：2026-10-05 00:57:00
+# 版本：v29
+# 更新日期：2026-10-05 09:40:00
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
@@ -52,7 +52,6 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 自建 · 新加坡 = NameRegex,自建, FilterKey = "(?i)(🇸🇬|新加坡|Singapore|(^|[^A-Za-z])(SGP|SIN|SG)([^A-Za-z]|$))"
 自建 · 美国 = NameRegex,自建, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
 备用 · 全部 = NameRegex,备用, FilterKey = ".*"
-备用 · 大流量 = NameRegex,备用, FilterKey = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc)"
 备用 · Emby大流量 = NameRegex,备用, FilterKey = "(?i)((?:🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$)).*(?:HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc))"
 备用 · 美国 = NameRegex,备用, FilterKey = "(?i)(🇺🇸|美国|United[ _-]?States|Los[ _-]?Angeles|San[ _-]?Jose|Seattle|Dallas|Chicago|Portland|Phoenix|Silicon[ _-]?Valley|Santa[ _-]?Clara|洛杉矶|圣何塞|西雅图|达拉斯|芝加哥|波特兰|凤凰城|硅谷|圣克拉拉|(^|[^A-Za-z])(USA|US|LAX|SJC|SEA)([^A-Za-z]|$))"
 
@@ -60,7 +59,6 @@ bypass-tun = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,1
 全球代理策略 = select,主力节点,备用节点,img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png
 主力节点 = select,自建 · 新加坡,机场 · 新加坡,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png
 备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
-备用大流量 = select,备用 · 大流量,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png
 AI = select,自建 · 美国,机场 · 美国,备用 · 美国,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png
 Emby = select,自建 · 全部,机场 · 全部,备用 · Emby大流量,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png
 番茄 = select,DIRECT,全球代理策略,img-url = https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/DragonRead.png
