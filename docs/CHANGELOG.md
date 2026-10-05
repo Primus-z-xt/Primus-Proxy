@@ -2,6 +2,14 @@
 
 ## 2026-10-05
 
+### Mihomo v10 / Loon v29 — 精简备用大流量顶层分组
+
+- Loon 删除可见的 `备用大流量` 策略组。
+- 同时删除只为该顶层策略服务的 `备用 · 大流量` Remote Filter。
+- Emby 使用的 `备用 · Emby大流量` 继续保留，仍执行“大流量节点 ∩ Emby 所选地区”的筛选。
+- 普通 `备用节点`、AI、Emby、Plex 及 Mihomo 行为均不变。
+- Builder 本地生成与 Cloudflare Worker 远程生成同步修改；Cloudflare 侧需要重新部署最新 Worker。
+
 ### Mihomo v10 / Loon v28 — Plex 代理内继续使用固定 Host
 
 - Loon 的 Plex 固定源站映射改为 `域名 = 源IP,use-in-proxy=true`。
