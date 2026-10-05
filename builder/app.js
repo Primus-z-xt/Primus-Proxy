@@ -650,7 +650,6 @@
       if (!config.enabled_sources.includes(sourceKey)) continue;
       if (sourceKey === "backup") {
         lines.push(`备用 · 全部 = NameRegex,备用, FilterKey = ".*"`);
-        lines.push(`备用 · 大流量 = NameRegex,备用, FilterKey = "${BACKUP_LARGE_TRAFFIC_REGEX}"`);
         if (embyAllSources.has("backup")) {
           lines.push(`备用 · Emby大流量 = NameRegex,备用, FilterKey = "${backupLargeTrafficRegionRegex(config.emby.regions)}"`);
         }
@@ -685,7 +684,6 @@
 
     if (hasBackup) {
       lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
-      lines.push(`备用大流量 = select,备用 · 大流量,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
     }
 
     lines.push(
