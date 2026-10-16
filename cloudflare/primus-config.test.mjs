@@ -36,6 +36,11 @@ try {
   assert.match(yaml, /^  - DOMAIN-SUFFIX,media\.example\.com,📺 Emby$/m);
   assert.match(yaml, /^  - DOMAIN,plex\.example\.com,📺 Emby$/m);
   assert.doesNotMatch(yaml, /^  DOMAIN(?:-SUFFIX)?,/m);
+  assert.doesNotMatch(yaml, /name: "(?:🛟 备用大流量|📺 Emby ·)/);
+  assert.match(yaml, /additional-prefix: "🛟 "/);
+  const embyBlock = yaml.slice(yaml.indexOf('  - name: "📺 Emby"'), yaml.indexOf('  - name: "🍅 番茄"'));
+  assert.match(embyBlock, /use:\n      - "自建"\n      - "备用"/);
+  assert.doesNotMatch(embyBlock, /proxies:/);
   const providers = yaml.split(/^proxy-providers:/m)[1].split(/^rule-providers:/m)[0];
   assert.equal((providers.match(/    type: http/g) || []).length, 3, 'one provider per source');
   for (const legacy of [
@@ -51,6 +56,7 @@ try {
   assert.equal(loonResponse.status, 200);
   assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-10-mihomo-private-rules-fix');
   const lcf = await loonResponse.text();
+  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), 'bb5c03d9024adb682a2d5a4d0ae7208cec9d7bc025166c7d8b8044cff79a9846', 'Loon output must remain byte-for-byte unchanged');
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));

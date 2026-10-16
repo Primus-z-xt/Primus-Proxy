@@ -383,7 +383,7 @@
         `    path: ${providerCachePath(sourceKey, "all", config.sources[sourceKey].url)}`,
         `    interval: 600`
       );
-      if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+      if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`, `    override:`, `      additional-prefix: "🛟 "`);
       lines.push("");
     }
     return lines.join("\n").trimEnd();
@@ -405,6 +405,12 @@
       .filter(Boolean)
       .map(pattern => `(?:${regexBody(pattern)}).*(?:${largeBody})`);
     return `(?i)(${parts.join("|")})`;
+  }
+
+  function mihomoEmbyRegex(codes) {
+    const regions = regexBody(combinedRegionRegex(codes));
+    const large = regexBody(BACKUP_LARGE_TRAFFIC_REGEX);
+    return `(?i)^(?=.*(?:${regions}))(?:(?!🛟 ).*|🛟 (?=.*(?:${large})).*)`;
   }
 
   function buildGroups(config) {
@@ -437,13 +443,7 @@
         `  - name: "🛟 备用节点"`,
         `    type: select`,
         `    use:`,
-        `      - "备用"`,
-        ``,
-        `  - name: "🛟 备用大流量"`,
-        `    type: select`,
-        `    use:`,
-        `      - "备用"`,
-        `    filter: '${BACKUP_LARGE_TRAFFIC_REGEX}'`
+        `      - "备用"`
       );
     }
 
@@ -461,34 +461,10 @@
         ``,
         `  - name: "📺 Emby"`,
         `    type: select`,
-        `    proxies:`
+        `    use:`
       );
-      for (const sourceKey of selfFirst(config.emby.sources)) {
-        lines.push(sourceKey === "backup"
-          ? `      - "📺 Emby · 备用大流量"`
-          : `      - "📺 Emby · ${SOURCE_META[sourceKey].label}"`);
-      }
-      for (const sourceKey of config.emby.sources) {
-        if (sourceKey === "backup") {
-          lines.push(
-            ``,
-            `  - name: "📺 Emby · 备用大流量"`,
-            `    type: select`,
-            `    use:`,
-            `      - "备用"`,
-            `    filter: '${backupLargeTrafficRegionRegex(config.emby.regions)}'`
-          );
-          continue;
-        }
-        lines.push(
-          ``,
-          `  - name: "📺 Emby · ${SOURCE_META[sourceKey].label}"`,
-          `    type: select`,
-          `    use:`,
-          `      - "${SOURCE_META[sourceKey].label}"`,
-          `    filter: '${combinedRegionRegex(config.emby.regions)}'`
-        );
-      }
+      for (const key of selfFirst(config.emby.sources)) lines.push(`      - "${SOURCE_META[key].label}"`);
+      lines.push(`    filter: '${mihomoEmbyRegex(config.emby.regions)}'`);
     }
 
     lines.push(

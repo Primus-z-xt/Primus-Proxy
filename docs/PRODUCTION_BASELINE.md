@@ -72,7 +72,7 @@ Builder 页面和新版 Worker运行时都会读取 `VERSION.json`，因此显�
 - 地区筛选放在 Proxy Group 的 `filter` 中完成。
 - Provider 缓存路径包含上游 URL 短哈希，避免更换订阅地址后复用旧缓存。
 - `备用` Provider 保留订阅信息类节点排除规则。
-- 新增 `🛟 备用大流量`：只包含备用订阅中“大流量组”对应节点；普通 `🛟 备用节点` 仍保留备用全部有效节点。
+- 不再显示独立 `🛟 备用大流量`；`🛟 备用节点` 保留全部有效备用节点。Clash 备用节点使用 `🛟 ` 前缀识别来源。
 - 所有策略均为人工 `select`。
 - 不使用 `url-test`、`fallback`、`load-balance` 或自动延迟选路。
 - AI 地区固定美国，来源可选。
@@ -105,7 +105,7 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v11 / Loon v29。
+当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v12 / Loon v29。
 
 Mihomo v11 修复 Worker 与 Builder 私有 Plex/Emby 规则注入遗漏 YAML 列表前缀的问题；Loon 规则保持原格式，历史 KV token 不变。
 
@@ -121,7 +121,7 @@ Mihomo v11 修复 Worker 与 Builder 私有 Plex/Emby 规则注入遗漏 YAML �
 
 策略结构：
 
-- Mihomo：`📺 Emby` 中机场/自建继续进入对应来源子组；备用进入独立的 `📺 Emby · 备用大流量`。
+- Mihomo：`📺 Emby` 直接显示节点，没有来源子组；按所选来源及地区筛选，备用来源额外限制为大流量节点。
 - Loon：`Emby` 中机场/自建继续使用对应地区过滤器；备用使用 `备用 · Emby大流量`。
 - 参与来源由 Builder 勾选，客户端内保持手动切换。
 - Emby 地区由 Builder 独立多选，不复用日用节点地区；机场/自建按所选地区过滤，备用则同时满足“大流量节点”与 Emby 所选地区两个条件。
