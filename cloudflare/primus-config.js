@@ -1,6 +1,9 @@
 // Primus Config Worker v6
 // Dynamic source + daily region selection for Mihomo and Loon.
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
+// Deployment marker: verify this header on private config responses after upload.
+// Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
+const WORKER_REVISION = "2026-10-sui-integration";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -731,6 +734,7 @@ async function handleLoonGet(token, env) {
       status: 200,
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
+        "X-Primus-Worker-Revision": WORKER_REVISION,
         "Content-Disposition": "attachment; filename=Primus-Loon.lcf",
         "Cache-Control": "no-store"
       }
@@ -789,6 +793,7 @@ async function handleGet(token, env) {
       status: 200,
       headers: {
         "Content-Type": "text/yaml; charset=utf-8",
+        "X-Primus-Worker-Revision": WORKER_REVISION,
         "Content-Disposition": "attachment; filename=Primus",
         "Cache-Control": "no-store"
       }
