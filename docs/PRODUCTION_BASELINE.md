@@ -1,6 +1,6 @@
 # Primus Proxy 当前生产基线
 
-> 本文件是当前生产架构说明。**实际代码与配置以 `main` 分支为唯一生产真源。**
+> 本文件供维护时查阅。**默认生产代码以 GitHub `main` 为准，具体行为需核对相关实现；线上状态需另查实际部署。**
 >
 > 当前 Mihomo / Loon 版本号与更新时间，以仓库根目录 `VERSION.json` 为唯一版本来源。
 
@@ -14,11 +14,14 @@
 
 `main`
 
+Agent 请先阅读 [AGENTS.md](../AGENTS.md) 并核对目标分支中的实现；使用方法见 [README](../README.md)。
+
 关键文件：
 
 - `VERSION.json`：Mihomo / Loon 唯一版本来源
 - `builder/index.html`：GitHub Pages UI
 - `builder/app.js`：Builder 生成逻辑
+- `builder/emby-region.js`：Emby 地区选择交互
 - `mihomo/template.yaml`：Mihomo 动态模板
 - `loon/template.lcf`：Loon 动态模板
 - `loon/Primus-Loon.lcf`：Loon 默认生产快照
@@ -105,9 +108,9 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v12 / Loon v29。
+当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略。
 
-Mihomo v11 修复 Worker 与 Builder 私有 Plex/Emby 规则注入遗漏 YAML 列表前缀的问题；Loon 规则保持原格式，历史 KV token 不变。
+具体版本与历史修复见 `VERSION.json` 和 [变更记录](./CHANGELOG.md)。
 
 隐私原则：
 
@@ -133,7 +136,7 @@ Mihomo v11 修复 Worker 与 Builder 私有 Plex/Emby 规则注入遗漏 YAML �
 Worker 兼容要求：
 
 - GitHub 模板中的私有规则注入点以注释形式存在，旧 Worker 读取新模板时不会破坏现有订阅。
-- 要让远程 Emby 订阅真正生效，必须把当前 `cloudflare/primus-config.js` 手动部署到 Cloudflare。
+- 修改 `cloudflare/primus-config.js` 后，需单独发布 Worker 才能更新远程生成逻辑。正常使用已部署的生成器无需重复部署。
 
 ## 6. Builder
 
@@ -149,7 +152,7 @@ Mihomo：
 
 Loon：
 
-- Builder 只提交来源/地区选择，不提交真实节点订阅 URL。
+- Loon 一键导入会提交来源/地区选择及可选的 Emby / Plex 设置，不提交真实节点订阅 URL。
 - 支持生成、下载和一键导入 Loon 配置。
 - 修改来源或地区后，旧生成结果自动失效，必须重新生成。
 
@@ -191,6 +194,7 @@ Mihomo 仍兼容历史 KV token。
 
 - `builder/index.html` → `/index.html`
 - `builder/app.js` → `/app.js`
+- `builder/emby-region.js` → `/emby-region.js`
 - `VERSION.json` → `/VERSION.json`
 - `mihomo/template.yaml` → `/template.yaml`
 - `loon/template.lcf` → `/Loon-template.lcf`
@@ -206,13 +210,8 @@ Pages 发布成功后，Builder 会直接读取最新 `VERSION.json`。
 - Primus token URL 本身等同访问密钥，不公开分享。
 - Loon 动态配置不保存真实节点 URL。
 
-## 10. 后续修改读取顺序
+## 10. 后续修改入口
 
-以后处理 Primus Proxy 生产问题时，优先按以下顺序读取：
+后续修改遵循根目录 [AGENTS.md](../AGENTS.md)：先核对目标分支与相关代码、模板、版本和发布流程，再按需参考本文件、部署 SOP 与变更记录。文档若与代码不符，先查清差异；不要以旧项目附件覆盖当前实现。
 
-1. `docs/PRODUCTION_BASELINE.md`
-2. `VERSION.json`
-3. 与任务相关的当前 `main` 文件
-4. 必要时再查看 `docs/CHANGELOG.md`
-
-不要以旧项目附件中的历史代码覆盖 GitHub 当前生产实现。
+本文件描述维护背景，不自动授予生产修改权限，也不替代用户当前要求。

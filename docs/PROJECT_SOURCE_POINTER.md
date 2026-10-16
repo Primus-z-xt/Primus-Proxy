@@ -1,19 +1,10 @@
 # Primus Proxy 项目来源指针
 
-Primus Proxy 当前生产真源：
+仓库：[Primus-z-xt/Primus-Proxy](https://github.com/Primus-z-xt/Primus-Proxy)  
+默认生产代码分支：`main`
 
-`https://github.com/Primus-z-xt/Primus-Proxy`
+后续 Agent 从仓库根目录的 [AGENTS.md](../AGENTS.md) 开始，核对目标分支和相关实际代码、模板、[版本文件](../VERSION.json)，再按需查阅 [维护说明](./PRODUCTION_BASELINE.md)、[部署 SOP](./deployment/Primus-VPS-SUI-SOP.md) 或 [变更记录](./CHANGELOG.md)。
 
-生产分支：
+配置版本以 `VERSION.json` 为准。判断线上状态还需检查实际部署，不能仅凭仓库提交推定已上线。
 
-`main`
-
-以后处理 VPS / Mihomo / Loon / Builder / Worker 相关生产问题时：
-
-1. 先读取 `docs/PRODUCTION_BASELINE.md`。
-2. 再读取 `VERSION.json`。
-3. 最后读取与任务相关的当前 `main` 文件。
-
-Mihomo / Loon 当前版本不要从本项目来源文件硬编码判断，统一以 GitHub `VERSION.json` 为准。
-
-旧的《Primus-Mihomo-Worker-当前生产基线》与《Primus-Proxy-统一生产SOP-v1》只作为历史参考，不再作为恢复或修改依据。
+旧项目附件、旧 TXT 基线与历史 SOP 只作参考，不得替代源码检查或覆盖当前实现。使用者请从 [README](../README.md) 进入。

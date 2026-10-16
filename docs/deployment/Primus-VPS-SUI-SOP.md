@@ -2,7 +2,7 @@
 
 维护基线：2026-10-16。适用于 Debian 13、S-UI 1.6.5、配套 sing-box 1.14.3；Windows 验证客户端为 Clash Verge 2.5.8 / Mihomo 1.19.32。这里记录实际验证过的流程，不保证未来版本字段不变。升级前核对官方发布和迁移说明。
 
-本 SOP 不包含真实订阅、凭据、客户端身份或个人部署地址。先读 [生产基线](../PRODUCTION_BASELINE.md)、[版本文件](../../VERSION.json) 和当前 main；不得用历史附件覆盖当前生产代码。
+本 SOP 不包含真实订阅、凭据、客户端身份或个人部署地址。先读 [AGENTS.md](../../AGENTS.md)，核对目标分支中的相关实现与 [版本文件](../../VERSION.json)，再参考 [维护说明](../PRODUCTION_BASELINE.md) 和本 SOP；不得用历史附件覆盖当前生产代码。
 
 ## A. 架构与参数
 
