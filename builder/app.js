@@ -283,10 +283,10 @@
     });
   }
 
-  function injectPrivateRules(template, rules) {
-    return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
+  function injectPrivateRules(template, rules, prefix = "") {
+    return template.replace(/^([\t ]*)# __PRIVATE_RULES__[\t ]*$/m, (_, indent) => {
       if (!rules.length) return `${indent}# 私有 Emby / Plex 分流未启用`;
-      return rules.map(rule => `${indent}${rule}`).join("\n");
+      return rules.map(rule => `${indent}${prefix}${rule}`).join("\n");
     });
   }
 
@@ -508,7 +508,7 @@
       .replace("__PROXY_GROUPS__", buildGroups(config));
     const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
     if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},📺 Emby`);
-    const withRules = injectPrivateRules(rendered, privateRules);
+    const withRules = injectPrivateRules(rendered, privateRules, "- ");
     return injectPrivateHosts(withRules, buildMihomoPlexHostLines(config.emby?.plex));
   }
 

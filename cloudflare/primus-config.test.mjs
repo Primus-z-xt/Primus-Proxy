@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
 
 const code = await readFile(new URL('./primus-config.js', import.meta.url), 'utf8');
 const worker = (await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)).default;
@@ -28,10 +29,13 @@ try {
   records.set('mihomo:modern', JSON.stringify(modern));
   const response = await get('/mihomo/modern');
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-10-sui-integration');
+  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-10-mihomo-private-rules-fix');
   const yaml = await response.text();
   for (const value of ['format=clash', '机场:', '自建:', '备用:', '🌐 全球代理策略', '📺 Emby', 'DOMAIN,plex.example.com,📺 Emby', '"plex.example.com": "192.0.2.10"']) assert.ok(yaml.includes(value), value);
   assert.ok(!yaml.includes('__PROXY_'));
+  assert.match(yaml, /^  - DOMAIN-SUFFIX,media\.example\.com,📺 Emby$/m);
+  assert.match(yaml, /^  - DOMAIN,plex\.example\.com,📺 Emby$/m);
+  assert.doesNotMatch(yaml, /^  DOMAIN(?:-SUFFIX)?,/m);
   const providers = yaml.split(/^proxy-providers:/m)[1].split(/^rule-providers:/m)[0];
   assert.equal((providers.match(/    type: http/g) || []).length, 3, 'one provider per source');
   for (const legacy of [
@@ -45,11 +49,20 @@ try {
   records.set('loon:existing', JSON.stringify(loon));
   const loonResponse = await get('/loon/existing/Primus-Loon.lcf');
   assert.equal(loonResponse.status, 200);
-  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-10-sui-integration');
+  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-10-mihomo-private-rules-fix');
   const lcf = await loonResponse.text();
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));
+  assert.match(lcf, /^DOMAIN,plex\.example\.com,Emby$/m);
+  assert.doesNotMatch(lcf, /^- DOMAIN/m);
+  // Exercise the actual browser helper too; local download and Worker must agree.
+  const builder = await readFile(new URL('../builder/app.js', import.meta.url), 'utf8');
+  const helper = builder.slice(builder.indexOf('  function injectPrivateRules('), builder.indexOf('  function injectPrivateHosts('));
+  const inject = vm.runInNewContext(`(${helper.trim()})`);
+  assert.equal(inject('rules:\n  # __PRIVATE_RULES__\n', ['DOMAIN,plex.example.com,Emby'], '- '), 'rules:\n  - DOMAIN,plex.example.com,Emby\n');
+  assert.equal(inject('[Rule]\n# __PRIVATE_RULES__\n', ['DOMAIN,plex.example.com,Emby']), '[Rule]\nDOMAIN,plex.example.com,Emby\n');
+  assert.ok(inject('rules:\n\n  # __PRIVATE_RULES__\n', [], '- ').includes('rules:\n\n'));
   assert.equal((await get('/mihomo/missing')).status, 404);
   assert.equal((await get('/loon/missing')).status, 404);
   for (const kind of ['mihomo', 'loon']) {

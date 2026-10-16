@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-10-sui-integration";
+const WORKER_REVISION = "2026-10-mihomo-private-rules-fix";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -171,10 +171,10 @@ function buildPrivateRuleLines(targets, policy) {
   });
 }
 
-function injectPrivateRules(template, rules) {
-  return template.replace(/^(\s*)# __PRIVATE_RULES__$/m, (_, indent) => {
+function injectPrivateRules(template, rules, prefix = "") {
+  return template.replace(/^([\t ]*)# __PRIVATE_RULES__[\t ]*$/m, (_, indent) => {
     if (!rules.length) return `${indent}# 私有 Emby / Plex 分流未启用`;
-    return rules.map(rule => `${indent}${rule}`).join("\n");
+    return rules.map(rule => `${indent}${prefix}${rule}`).join("\n");
   });
 }
 
@@ -532,7 +532,7 @@ function renderTemplate(template, config) {
       .replace("__PROXY_GROUPS__", buildGroups(config));
     const privateRules = config.emby?.enabled ? buildPrivateRuleLines(config.emby.targets, "📺 Emby") : [];
     if (config.emby?.plex?.enabled) privateRules.push(`DOMAIN,${config.emby.plex.domain},📺 Emby`);
-    const withRules = injectPrivateRules(rendered, privateRules);
+    const withRules = injectPrivateRules(rendered, privateRules, "- ");
     return injectPrivateHosts(withRules, buildMihomoPlexHostLines(config.emby?.plex));
   }
 

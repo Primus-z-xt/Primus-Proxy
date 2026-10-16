@@ -2,6 +2,12 @@
 
 ## 2026-10-16
 
+### Mihomo v11 / Loon v29 — 修复私有 Plex / Emby 规则的 YAML 列表格式
+
+- Worker 和 Builder 本地生成同时为 Mihomo 注入的私有规则补上 `- `，修复启用 Plex/Emby 后的 YAML block mapping 解析失败。
+- 缩进匹配限制为空格/Tab，避免吞掉相邻空行；Loon 保持无 YAML 前缀的规则格式。
+- 增加两端私有规则列表格式、Loon 不变及 Builder 实际 helper 的回归测试。历史 KV token 和数据结构无需更改。
+
 ### S-UI 上游迁移与部署 SOP（配置版本仍为 Mihomo v10 / Loon v29）
 
 - 自建源迁移沿用原 KV token 和数据结构，仅更新对应私有上游字段；真实 URL 不进入仓库。

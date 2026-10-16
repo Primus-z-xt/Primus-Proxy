@@ -105,7 +105,9 @@ Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL
 
 ## 5. 私有 Emby 分流
 
-当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v10 / Loon v29。
+当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略；当前配置版本为 Mihomo v11 / Loon v29。
+
+Mihomo v11 修复 Worker 与 Builder 私有 Plex/Emby 规则注入遗漏 YAML 列表前缀的问题；Loon 规则保持原格式，历史 KV token 不变。
 
 隐私原则：
 
