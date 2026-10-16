@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-16
+
+### S-UI 上游迁移与部署 SOP（配置版本仍为 Mihomo v10 / Loon v29）
+
+- 自建源迁移沿用原 KV token 和数据结构，仅更新对应私有上游字段；真实 URL 不进入仓库。
+- Worker 成功配置响应增加 `X-Primus-Worker-Revision`，用于核对 Dashboard 实际部署；增加现代/历史 KV、两端渲染及 Plex 保留的回归测试。
+- Loon 保持策略与节点资源分离，继续保留 Plex `use-in-proxy=true`；官方 resource-parser 已完成 S-UI Reality/Hysteria2 格式兼容验证，手机实机测试不在 Windows 验证范围内。
+- 新增完整参数化 [VPS 部署 SOP](./deployment/Primus-VPS-SUI-SOP.md)，包含服务端 sniff + 精确域名目标 IP 覆写、正确应用端口与 Host/SNI 验证、证书续期、恢复和 AI Agent 指引。
+- 未改变公开配置模板或策略行为，因此不增加 Mihomo/Loon 配置版本。
+
 ## 2026-10-05
 
 ### Mihomo v10 / Loon v29 — 精简备用大流量顶层分组

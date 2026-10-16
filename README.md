@@ -7,6 +7,12 @@
 > **生产基线：** [docs/PRODUCTION_BASELINE.md](./docs/PRODUCTION_BASELINE.md)  
 > **变更记录：** [docs/CHANGELOG.md](./docs/CHANGELOG.md)
 
+## VPS 部署与迁移 SOP
+
+[S-UI 双节点、服务端 Plex 定向、Worker/KV 接入与 AI Agent 自动化部署指引](./docs/deployment/Primus-VPS-SUI-SOP.md)。包含经过实际验证的版本、参数化步骤、证书续期、备份回滚和端到端验收；不包含生产凭据。
+
+S-UI 自建源供 Mihomo 使用时必须选择原生 Clash 格式（`?format=clash`）；Loon 继续在 App 内维护名为“自建”的节点资源，策略文件不嵌入真实节点 URL。不要通过重建历史 Worker token 完成上游迁移。
+
 ## 配置生成器
 
 **入口：** https://primus-z-xt.github.io/Primus-Proxy/
