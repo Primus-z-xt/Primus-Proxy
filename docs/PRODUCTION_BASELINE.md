@@ -1,217 +1,81 @@
-# Primus Proxy 当前生产基线
+# Primus Proxy 维护与架构
 
-> 本文件供维护时查阅。**默认生产代码以 GitHub `main` 为准，具体行为需核对相关实现；线上状态需另查实际部署。**
->
-> 当前 Mihomo / Loon 版本号与更新时间，以仓库根目录 `VERSION.json` 为唯一版本来源。
+默认参考 GitHub `main` 的实际实现；线上状态另查部署。开始修改前读 [AGENTS.md](../AGENTS.md)，使用方法见 [README](../README.md)，VPS 安装、升级和排障见 [部署 SOP](deployment/Primus-VPS-SUI-SOP.md)。旧聊天和附件只作历史参考。
 
-## 1. 生产真源
+## 文件与发布对象
 
-仓库：
+| 文件 | 职责 |
+| --- | --- |
+| `VERSION.json` | Mihomo / Loon 配置版本及北京时间更新时间 |
+| `builder/index.html`、`app.js`、`emby-region.js` | 页面、本地生成及媒体选择交互 |
+| `mihomo/template.yaml` | Mihomo 模板 |
+| `loon/template.lcf`、`loon/Primus-Loon.lcf` | Loon 模板及默认快照 |
+| `cloudflare/primus-config.js` | 远程配置、KV 兼容与接口 |
+| `cloudflare/primus-config.test.mjs` | 现有生成逻辑回归测试 |
+| `.github/workflows/pages.yml` | Builder / 模板静态发布 |
+| `.github/workflows/bump-version.yml` | 人工选择目标的配置版本升级 |
 
-`Primus-z-xt/Primus-Proxy`
+GitHub 提交、Pages 发布、Cloudflare Worker 部署是三个结果。当前工作流没有自动部署 Worker；纯 VPS 或文档维护无需重新部署它。文档变更不触发当前 Pages 路径过滤器。
 
-生产分支：
+## 配置生成与客户端
 
-`main`
+Builder 入口：https://primus-z-xt.github.io/Primus-Proxy/
 
-Agent 请先阅读 [AGENTS.md](../AGENTS.md) 并核对目标分支中的实现；使用方法见 [README](../README.md)。
+| 客户端 | 生成与节点来源 |
+| --- | --- |
+| Mihomo | 本地生成 YAML，或提交启用来源/策略到 Worker 生成私有订阅；每个来源仅一个 Provider，地区在策略组过滤 |
+| Loon | 生成策略配置；App 单独添加名为 `机场 / 自建 / 备用` 的节点资源，生成器不接收这些资源 URL |
 
-关键文件：
+两端均以手动选择为当前实现，日用来源/地区可选，AI 固定美国且来源可选。最终策略、过滤器名称和插件以模板与生成函数为准。
 
-- `VERSION.json`：Mihomo / Loon 唯一版本来源
-- `builder/index.html`：GitHub Pages UI
-- `builder/app.js`：Builder 生成逻辑
-- `builder/emby-region.js`：Emby 地区选择交互
-- `mihomo/template.yaml`：Mihomo 动态模板
-- `loon/template.lcf`：Loon 动态模板
-- `loon/Primus-Loon.lcf`：Loon 默认生产快照
-- `cloudflare/primus-config.js`：Cloudflare Worker 源码
-- `.github/workflows/pages.yml`：GitHub Pages 发布
-- `.github/workflows/bump-version.yml`：半自动版本升级
+Mihomo Provider 缓存路径包含上游 URL 短哈希，避免地址变化沿用旧缓存；备用排除订阅信息节点，使用 `🛟 ` 前缀区分来源。不按地区重复创建 Provider，以免同名节点 `ambiguous`。不显示独立备用大流量顶层组，普通备用节点保持完整。
 
-旧的项目附件、旧 TXT 基线、旧 SOP 只作为历史资料，不再覆盖 GitHub `main` 的当前状态。
+Loon 的配置与资源共同决定最终行为；配置文件不包含节点 URL 是设计选择，不能为“补节点”而把凭据嵌入公开模板。当前插件以 `loon/template.lcf` 为准，不在此重复维护清单。
 
-## 2. 版本管理
+## Emby / Plex
 
-版本文件：
+- Emby 有独立来源与地区选择，不复用日用地区；客户端内保持手动切换。
+- Mihomo 的 Emby 直接列节点，没有来源子组；备用同时满足所选地区和大流量筛选。
+- Loon 的 Emby 保留机场/自建地区过滤器及 `备用 · Emby大流量`。
+- 可选 Plex 域名与固定源 IP 复用 Emby 策略，不另建策略组。Mihomo 注入 `hosts`，Loon 注入带 `use-in-proxy=true` 的 `[Host]`。
+- 私有线路仅生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 等对应规则；具体渲染以 Builder 与 Worker 的实现为准。
 
-`VERSION.json`
+VPS 服务端 Plex 定向是另一层：只影响经过该 VPS 且域名可识别的请求，不能替代客户端分流，也不能控制其他机场。原理、端口、验收与本次未通过状态集中在部署 SOP，避免在多处复制。
 
-规则：
+## Worker 与 KV
 
-- 修改 Builder UI、README、文档：不升级 Mihomo / Loon 配置版本。
-- 修改 Mihomo Provider、策略组、规则、DNS、模板行为：Mihomo 版本 +1。
-- 修改 Loon 策略、规则、插件、General 或模板行为：Loon 版本 +1。
-- 同时影响两端：两边都 +1。
-- `updated_at` 使用北京时间，格式为 `YYYY-MM-DD HH:mm:ss`。
-- 版本号不按 commit 自动增长，避免 UI 调整把配置版本变成 commit 计数器。
+生产 Worker：`primus-config`；域名：`https://config.primusz.top`；绑定：`MIHOMO_KV`。
 
-推荐使用 GitHub Actions：
+| 接口 | 用途 |
+| --- | --- |
+| `POST /api/mihomo` | 保存 Mihomo 私有来源与策略 |
+| `GET /mihomo/<token>` | 生成 Mihomo 配置 |
+| `POST /api/loon` | 保存 Loon 策略及可选媒体设置 |
+| `GET /loon/<token>/Primus-Loon.lcf` | 生成 Loon 配置 |
 
-`Bump Config Version`
+Worker 从 main 读取模板与版本文件，成功响应的 `X-Primus-Worker-Revision` 用于核对部署代码，不能替代实际加载验证。
 
-手动选择 `mihomo / loon / both`，工作流会自动：
+保留历史 Mihomo token 与 KV 结构兼容。迁移自建上游只改命中的 legacy `self_url` 或现代 `sources.self.url`，不重建 token、不清空 Namespace、不改变机场/备用与客户端选择。Mihomo 自建源使用 `format=clash`；Loon 资源另行更新。
 
-1. 对目标版本 +1。
-2. 写入北京时间到秒。
-3. 同步模板与 Loon 默认快照中的兼容性版本头。
-4. 提交到 `main`。
-5. 由 Pages 工作流继续发布。
+模板的私有规则注入点采用注释形式以兼容旧 Worker。生成逻辑如有变更，检查 Builder、Worker 与模板是否都需要同步，运行现有回归测试，并验证未要求修改的客户端行为。
 
-Builder 页面和新版 Worker运行时都会读取 `VERSION.json`，因此显示版本与动态生成配置会自动跟随版本文件。
+## 隐私与版本
 
-## 3. Mihomo 当前生产架构
+本地生成不上传来源 URL 和媒体设置；主动生成远程 Mihomo 订阅才将启用来源等配置保存到私有 KV。Loon 一键导入会发送策略及可选媒体设置，但不包含节点资源 URL。Emby/Plex 私有输入不写入 localStorage、Git 或公开快照；私有 token URL 等同访问密钥。
 
-节点来源固定为三类：
+版本以 `VERSION.json` 为唯一来源：
 
-- `机场`
-- `自建`
-- `备用`
+- 改 Mihomo 行为只升级 Mihomo，改 Loon 行为只升级 Loon，两端都改才都升级。
+- UI、文档或 VPS 软件维护不增加客户端配置版本。
+- `updated_at` 使用 `Asia/Shanghai`、`YYYY-MM-DD HH:mm:ss`。
+- `Bump Config Version` 工作流按选择同步版本文件、模板及 Loon 快照版本头；不按 commit 自动计数。
 
-核心原则：
+## Pages
 
-- 每个来源只加载一次 Proxy Provider。
-- 不再为“机场 · 美国 / 备用 · 美国”等地区重复创建 Provider。
-- 地区筛选放在 Proxy Group 的 `filter` 中完成。
-- Provider 缓存路径包含上游 URL 短哈希，避免更换订阅地址后复用旧缓存。
-- `备用` Provider 保留订阅信息类节点排除规则。
-- 不再显示独立 `🛟 备用大流量`；`🛟 备用节点` 保留全部有效备用节点。Clash 备用节点使用 `🛟 ` 前缀识别来源。
-- 所有策略均为人工 `select`。
-- 不使用 `url-test`、`fallback`、`load-balance` 或自动延迟选路。
-- AI 地区固定美国，来源可选。
-- 最终 `MATCH` 进入 `🌐 全球代理策略`。
+`pages.yml` 发布 Builder 三个文件及 `VERSION.json`，并将三个配置文件映射为 `/template.yaml`、`/Loon-template.lcf`、`/Primus-Loon.lcf`。Builder 读取版本文件；Worker 代码仍需单独发布。版本更新后的实际部署以运行结果确认。
 
-该架构用于避免同名节点被多个 Provider 重复加载后，在 Clash Verge Rev 中出现 `ambiguous`。
+## VPS 当前维护记录
 
-## 4. Loon 当前生产架构
+2026-10-28：Debian 12，S-UI 1.6.6 / sing-box 1.14.4；node 灰云直连、面板/订阅橙云分离。已完成公钥专用 SSH、系统与内核更新、管理端口 Cloudflare 来源限制、日志限制及无效网卡配置修复。
 
-Loon 与 Mihomo 使用相同的“来源 + 地区”选择思路，但节点 URL 不写入 Loon 配置。
-
-使用要求：
-
-- 节点资源由用户在 Loon App 内单独添加。
-- 资源名称必须严格为：`机场 / 自建 / 备用`。
-- 日用节点：来源可选 + 地区多选。
-- AI：固定美国 + 来源可选。
-- 全部使用手动选择。
-- 不使用自动测速切换、fallback。
-- 不再显示独立的 `备用大流量` 顶层策略；备用大流量筛选仅保留在 Emby 内部需要的位置。
-
-当前生产插件由 `loon/template.lcf` 为准，包括：
-
-- YouTube_remove_ads
-- Block_HTTPDNS
-- BlockAdvertisers
-- Prevent_DNS_Leaks
-- Node_detection_tool
-- nodecheck
-
-## 5. 私有 Emby 分流
-
-当前生产支持独立 Emby 分流及独立地区筛选，并支持 Plex 私有固定源站复用 Emby 策略。
-
-具体版本与历史修复见 `VERSION.json` 和 [变更记录](./CHANGELOG.md)。
-
-隐私原则：
-
-- GitHub 只保存 Emby 功能代码，不保存真实播放线路。
-- Builder 的 Emby 线路输入框默认隐藏。
-- Emby 线路不写入 localStorage。
-- 本地生成配置时，线路只进入用户本地生成结果。
-- 生成远程 Mihomo / Loon 私有配置时，线路保存在 `MIHOMO_KV` 对应的私有 token 记录中。
-- 公开 Loon 快照不包含真实线路。
-- Loon 的 Plex `[Host]` 映射使用 `use-in-proxy=true`，确保流量进入 Emby 代理策略后仍继续使用指定源 IP。
-
-策略结构：
-
-- Mihomo：`📺 Emby` 直接显示节点，没有来源子组；按所选来源及地区筛选，备用来源额外限制为大流量节点。
-- Loon：`Emby` 中机场/自建继续使用对应地区过滤器；备用使用 `备用 · Emby大流量`。
-- 参与来源由 Builder 勾选，客户端内保持手动切换。
-- Emby 地区由 Builder 独立多选，不复用日用节点地区；机场/自建按所选地区过滤，备用则同时满足“大流量节点”与 Emby 所选地区两个条件。
-- Emby 私有地址只用于生成 DOMAIN-SUFFIX / IP-CIDR / IP-CIDR6 规则。
-- Plex 不新增独立策略组：Builder 可在 Emby 区域填写 Plex 域名与源 IP，最终固定解析到源 IP，并将 Plex 域名规则直接指向现有 Emby 策略组。
-- Plex 域名与源 IP不写入 GitHub，也不写入浏览器 localStorage；本地生成仅进入本地配置，远程配置仅保存在私有 KV。
-- Mihomo 使用动态 `hosts` 映射；Loon 使用动态 `[Host]` 映射。
-
-Worker 兼容要求：
-
-- GitHub 模板中的私有规则注入点以注释形式存在，旧 Worker 读取新模板时不会破坏现有订阅。
-- 修改 `cloudflare/primus-config.js` 后，需单独发布 Worker 才能更新远程生成逻辑。正常使用已部署的生成器无需重复部署。
-
-## 6. Builder
-
-生产入口：
-
-`https://primus-z-xt.github.io/Primus-Proxy/`
-
-Mihomo：
-
-- 本地生成 YAML 时，上游 URL 只在当前浏览器内使用。
-- 点击“生成订阅链接”时，才把启用的上游 URL 与策略选择提交到 Worker。
-- 支持 Clash Verge Rev 一键导入。
-
-Loon：
-
-- Loon 一键导入会提交来源/地区选择及可选的 Emby / Plex 设置，不提交真实节点订阅 URL。
-- 支持生成、下载和一键导入 Loon 配置。
-- 修改来源或地区后，旧生成结果自动失效，必须重新生成。
-
-UI 行为不属于配置版本。UI 调整不应升级 Mihomo / Loon 版本。
-
-## 7. Cloudflare Worker
-
-Worker：
-
-`primus-config`
-
-生产域名：
-
-`https://config.primusz.top`
-
-KV：
-
-`MIHOMO_KV`
-
-接口：
-
-- `POST /api/mihomo`
-- `GET /mihomo/<token>`
-- `POST /api/loon`
-- `GET /loon/<token>/Primus-Loon.lcf`
-
-Worker 从 GitHub `main` 读取最新模板；新版 Worker同时读取 `VERSION.json`，把版本信息写入动态输出。
-
-Mihomo 仍兼容历史 KV token。
-
-注意：
-
-**GitHub 中修改 `cloudflare/primus-config.js` 不等于已经部署到 Cloudflare。**
-在没有新增自动部署流程之前，Worker 代码变更仍需在 Cloudflare 侧手动部署。
-
-## 8. GitHub Pages
-
-`.github/workflows/pages.yml` 发布：
-
-- `builder/index.html` → `/index.html`
-- `builder/app.js` → `/app.js`
-- `builder/emby-region.js` → `/emby-region.js`
-- `VERSION.json` → `/VERSION.json`
-- `mihomo/template.yaml` → `/template.yaml`
-- `loon/template.lcf` → `/Loon-template.lcf`
-- `loon/Primus-Loon.lcf` → `/Primus-Loon.lcf`
-
-Pages 发布成功后，Builder 会直接读取最新 `VERSION.json`。
-
-## 9. 隐私与安全
-
-- 真实上游订阅 URL 不写入 GitHub。
-- Mihomo 本地生成不会上传订阅 URL。
-- 只有主动生成远程 Mihomo 订阅时，URL 才保存到私有 KV。
-- Primus token URL 本身等同访问密钥，不公开分享。
-- Loon 动态配置不保存真实节点 URL。
-
-## 10. 后续修改入口
-
-后续修改遵循根目录 [AGENTS.md](../AGENTS.md)：先核对目标分支与相关代码、模板、版本和发布流程，再按需参考本文件、部署 SOP 与变更记录。文档若与代码不符，先查清差异；不要以旧项目附件覆盖当前实现。
-
-本文件描述维护背景，不自动授予生产修改权限，也不替代用户当前要求。
+本次两协议服务器侧 HTTPS 转发与 12 份订阅回归通过；Plex 固定源站当时不可达，用户网络 TCP 直连与全部设备未重新验收。UDP 参数保持原值。具体证据、适用边界与恢复方法见 [部署 SOP](deployment/Primus-VPS-SUI-SOP.md#9-2026-10-28-已执行与未执行)。

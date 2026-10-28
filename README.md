@@ -38,7 +38,8 @@ Loon 配置与节点资源分开维护，生成器不接收 Loon 的节点订阅
 ## 更多资料
 
 - [维护与架构说明](./docs/PRODUCTION_BASELINE.md)
-- [VPS / S-UI 部署、迁移与故障排查](./docs/deployment/Primus-VPS-SUI-SOP.md)
+- [VPS / S-UI 部署、升级与故障排查](./docs/deployment/Primus-VPS-SUI-SOP.md)
 - [变更记录](./docs/CHANGELOG.md) · [当前配置版本](./VERSION.json)
 
 > **给 AI / Agent：** 修改前请先阅读 [AGENTS.md](./AGENTS.md)，并检查目标分支中的实际代码与配置。README 主要介绍功能和使用方法，具体行为以代码为准。
+
