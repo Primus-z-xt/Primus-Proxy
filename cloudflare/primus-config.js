@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-10-mihomo-private-rules-fix";
+const WORKER_REVISION = "2026-11-loon-auto-select";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -552,6 +552,12 @@ function normalizeLoonPayload(body) {
   const dailySources = uniqueAllowed(body?.daily_sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
   const dailyRegions = uniqueAllowed(body?.daily_regions, Object.keys(REGIONS));
   const aiSources = uniqueAllowed(body?.ai_sources, SOURCE_ORDER).filter(key => enabledSources.includes(key));
+  const autoSelect = {
+    backup: Boolean(body?.auto_select?.backup),
+    daily: Boolean(body?.auto_select?.daily),
+    ai: Boolean(body?.auto_select?.ai),
+    emby: Boolean(body?.auto_select?.emby)
+  };
 
   if (!dailySources.length) throw new Error("Loon 日用节点至少选择一个已启用来源");
   if (!dailyRegions.length) throw new Error("Loon 日用节点至少选择一个地区");
@@ -564,6 +570,7 @@ function normalizeLoonPayload(body) {
     daily_sources: dailySources,
     daily_regions: dailyRegions,
     ai_sources: aiSources,
+    auto_select: autoSelect,
     emby
   };
 }
@@ -604,6 +611,12 @@ function buildLoonFilters(config) {
   return lines.join("\n");
 }
 
+const LOON_AUTO_SUFFIX = ",url = http://cp.cloudflare.com/generate_204,interval = 600";
+
+function loonGroup(auto, members) {
+  return (auto ? "url-test" : "select") + "," + members + (auto ? LOON_AUTO_SUFFIX : "");
+}
+
 function buildLoonGroups(config) {
   const dailyFilters = [];
   for (const sourceKey of selfFirst(config.daily_sources)) {
@@ -620,20 +633,20 @@ function buildLoonGroups(config) {
 
   const lines = [
     `全球代理策略 = select,${globalItems.join(",")},img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png`,
-    `主力节点 = select,${dailyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
+    `主力节点 = ${loonGroup(config.auto_select?.daily, dailyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
   ];
 
   if (hasBackup) {
-    lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+    lines.push(`备用节点 = ${loonGroup(config.auto_select?.backup, "备用 · 全部")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
   }
 
   lines.push(
-    `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
+    `AI = ${loonGroup(config.auto_select?.ai, aiFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
   );
 
   if (config.emby?.enabled) {
     const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用 · Emby大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
-    lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
+    lines.push(`Emby = ${loonGroup(config.auto_select?.emby, embyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
   }
 
   lines.push(

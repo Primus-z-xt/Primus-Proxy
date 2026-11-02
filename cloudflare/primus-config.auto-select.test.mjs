@@ -105,4 +105,68 @@ const legacyStored = await render({ ...base, version: 2 }, 'legacy');
 assert.ok(legacyStored.includes('__PROXY_') === false);
 assert.match(groupBlock(legacyStored, '🚀 日用节点'), /^    type: select$/m);
 
+
+// ---------------- Loon ----------------
+const loonBase = {
+  enabled_sources: ['airport', 'self', 'backup'],
+  daily_sources: ['self', 'airport'],
+  daily_regions: ['US', 'SG'],
+  ai_sources: ['self', 'airport'],
+  emby: { enabled: true, targets: ['media.example.com'], sources: ['self', 'backup'], regions: ['US'] },
+};
+
+async function renderLoon(config, key) {
+  records.set('loon:' + key, JSON.stringify(config));
+  const response = await worker.fetch(new Request('https://example.com/loon/' + key + '/Primus-Loon.lcf'), env);
+  assert.equal(response.status, 200);
+  return response.text();
+}
+
+function loonGroupLine(lcf, name) {
+  const re = new RegExp('^\\s*' + name + ' = .*$', 'm');
+  const m = lcf.match(re);
+  assert.ok(m, 'loon group ' + name + ' missing');
+  return m[0];
+}
+
+const loonPlain = await renderLoon(loonBase, "plain");
+for (const name of ['主力节点', '备用节点', 'AI', 'Emby']) {
+  const line = loonGroupLine(loonPlain, name);
+  assert.ok(line.includes(' = select,'), name + ' should stay select');
+  assert.ok(!line.includes(',url ='), name + ' must not carry url param');
+}
+
+const loonAuto = await renderLoon({ ...loonBase, auto_select: { daily: true, backup: true, ai: true, emby: true } }, 'auto');
+for (const name of ['主力节点', '备用节点', 'AI', 'Emby']) {
+  const line = loonGroupLine(loonAuto, name);
+  assert.ok(line.includes(' = url-test,'), name + ' should be url-test');
+  assert.ok(line.includes('url = http://cp.cloudflare.com/generate_204'), name + ' needs url param');
+  assert.ok(line.includes('interval = 600'), name + ' needs interval');
+  assert.ok(line.includes('img-url = '), name + ' keeps icon');
+}
+
+const loonPartial = await renderLoon({ ...loonBase, auto_select: { ai: true } }, 'partial');
+assert.ok(loonGroupLine(loonPartial, 'AI').includes(' = url-test,'));
+assert.ok(loonGroupLine(loonPartial, '主力节点').includes(' = select,'));
+assert.ok(loonGroupLine(loonPartial, '备用节点').includes(' = select,'));
+
+for (const name of ['全球代理策略', '番茄', '抖音', '小红书']) {
+  assert.ok(loonGroupLine(loonAuto, name).includes(' = select,'), name + ' must stay select');
+}
+
+const loonPost = await worker.fetch(
+  new Request('https://example.com/api/loon', {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: "https://primus-z-xt.github.io" },
+    body: JSON.stringify({ ...loonBase, auto_select: { backup: true } }),
+  }),
+  env
+);
+assert.equal(loonPost.status, 200);
+const loonBody = await loonPost.json();
+const loonToken = loonBody.config_url.match(/\/loon\/([A-Za-z0-9_-]+)/)[1];
+const loonStored = JSON.parse(records.get('loon:' + loonToken));
+assert.equal(loonStored.auto_select.backup, true);
+assert.equal(loonStored.auto_select.daily, false);
+
 console.log('auto-select tests passed');
