@@ -16,7 +16,7 @@ const SOURCE_META = {
   backup: { label: "备用", path: "backup" }
 };
 const BACKUP_EXCLUDE = "(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)";
-const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc)";
+const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|su-or-(vc|vl|tj)|pp-or-(vlr|v[cl]|tj)|bb-zen-v[cl]|su-rn2?-v[cl]|su-rn2-tj|mm-rn-vc|ZEN-GOLD)";
 const REGIONS = {
   HK: { label: "香港", regex: "(?i)(🇭🇰|香港|Hong[ _-]?Kong|(^|[^A-Za-z])(HKG|HK)([^A-Za-z]|$))" },
   TW: { label: "台湾", regex: "(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|台北|(^|[^A-Za-z])(TWN|TW|TPE)([^A-Za-z]|$))" },

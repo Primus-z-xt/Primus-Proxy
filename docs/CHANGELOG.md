@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 · Mihomo v14
+
+- 更新备用「大流量」节点识别正则：补齐 `su-or-vl/tj`、`pp-or-tj`、`bb-zen-vl` 与 `US-ZEN-GOLD-*`，此前这 9 个节点不会被 Emby 备用线路选中。
+- 以实际订阅（49 个节点，其中大流量组 19 个）验证：组内命中 10/19 → 19/19，组外误伤 0。
+- Builder 与 Worker 同步修改；Mihomo 配置版本 v13 → v14，Loon 不变。
+
 ## 2026-11-02 · Worker 静态订阅路由
 
 - 新增 `GET /s/<token>`：从 KV 读取 `sub:<token>` 并原样返回（`text/yaml` + CORS），用于托管只含部分节点的上游订阅。
