@@ -11,7 +11,7 @@
     backup: { label: "备用", path: "backup", enableId: "enable-backup", urlId: "backup-url" }
   };
   const BACKUP_EXCLUDE = "(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)";
-  const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc)";
+  const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|su-or-(vc|vl|tj)|pp-or-(vlr|v[cl]|tj)|bb-zen-v[cl]|su-rn2?-v[cl]|su-rn2-tj|mm-rn-vc|ZEN-GOLD)";
   const REGION_GROUPS = [
     { title: "东亚 / 东南亚", codes: ["HK","TW","JP","KR","SG","MY","TH","VN","PH","ID"] },
     { title: "北美", codes: ["US","CA"] },

@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-11-loon-auto-select";
+const WORKER_REVISION = "2026-11-static-sub";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -16,7 +16,7 @@ const SOURCE_META = {
   backup: { label: "备用", path: "backup" }
 };
 const BACKUP_EXCLUDE = "(?i)(Expire|Traffic|Sync|流量|到期|过期|剩余|已用|总量|重置|订阅信息|官网|客服|套餐)";
-const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|pp-or-vlr|bb-zen-vlr|su-rn2-tj|su-rn2?-v[cl]|su-or-vc|pp-or-v[cl]|mm-rn-vc|bb-zen-vc)";
+const BACKUP_LARGE_TRAFFIC_REGEX = "(?i)(HOT|mm-or-tj|su-alg-vlr|su-or-vlr|su-or-(vc|vl|tj)|pp-or-(vlr|v[cl]|tj)|bb-zen-v[cl]|su-rn2?-v[cl]|su-rn2-tj|mm-rn-vc|ZEN-GOLD)";
 const REGIONS = {
   HK: { label: "香港", regex: "(?i)(🇭🇰|香港|Hong[ _-]?Kong|(^|[^A-Za-z])(HKG|HK)([^A-Za-z]|$))" },
   TW: { label: "台湾", regex: "(?i)(🇹🇼|台湾|台灣|Taiwan|Taipei|台北|(^|[^A-Za-z])(TWN|TW|TPE)([^A-Za-z]|$))" },
@@ -811,6 +811,21 @@ async function handleGet(token, env) {
   }
 }
 
+async function handleStaticSub(token, env, origin) {
+  const raw = await env.MIHOMO_KV.get(`sub:${token}`);
+  if (!raw) {
+    return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store", ...corsHeaders(origin) } });
+  }
+  return new Response(raw, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/yaml; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...corsHeaders(origin)
+    }
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -822,6 +837,9 @@ export default {
 
     const mihomoMatch = url.pathname.match(/^\/mihomo\/([A-Za-z0-9_-]+)$/);
     if (request.method === "GET" && mihomoMatch) return handleGet(mihomoMatch[1], env);
+
+    const staticMatch = url.pathname.match(/^\/s\/([A-Za-z0-9_-]{8,64})$/);
+    if (request.method === "GET" && staticMatch) return handleStaticSub(staticMatch[1], env, origin);
 
     const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)(?:\/Primus-Loon\.lcf)?$/);
     if (request.method === "GET" && loonMatch) return handleLoonGet(loonMatch[1], env);

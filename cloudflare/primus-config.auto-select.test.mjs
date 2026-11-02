@@ -169,4 +169,56 @@ const loonStored = JSON.parse(records.get('loon:' + loonToken));
 assert.equal(loonStored.auto_select.backup, true);
 assert.equal(loonStored.auto_select.daily, false);
 
+
+// ---------------- 静态订阅路由 /s/<token> ----------------
+const yamlFixture = 'proxies:\n  - name: test\n    type: vless\n';
+records.set('sub:cf7f3a9c2e', yamlFixture);
+
+const subRes = await worker.fetch(new Request('https://example.com/s/cf7f3a9c2e', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
+assert.equal(subRes.status, 200);
+assert.match(subRes.headers.get('Content-Type') || '', /text\/yaml/);
+assert.equal(subRes.headers.get('Access-Control-Allow-Origin'), 'https://primus-z-xt.github.io');
+assert.equal(await subRes.text(), yamlFixture);
+
+const subMissing = await worker.fetch(new Request('https://example.com/s/aaaaaaaa'), env);
+assert.equal(subMissing.status, 404);
+
+const subBadLen = await worker.fetch(new Request('https://example.com/s/short'), env);
+assert.equal(subBadLen.status, 404);
+
+
+// ---------------- 备用大流量正则 ----------------
+const embyCfg = {
+  version: 3,
+  sources: {
+    airport: { enabled: true, url: 'https://e.com/a?format=clash' },
+    self: { enabled: true, url: 'https://e.com/b?format=clash' },
+    backup: { enabled: true, url: 'https://e.com/c?format=clash' },
+  },
+  daily_sources: ['self'], daily_regions: ['US'], ai_sources: ['self'],
+  emby: { enabled: true, targets: ['media.example.com'], sources: ['backup'], regions: ['US'] },
+};
+records.set('mihomo:emby', JSON.stringify(embyCfg));
+const embyYaml = await (await worker.fetch(new Request('https://example.com/mihomo/emby'), env)).text();
+const embyStart = embyYaml.indexOf('  - name: "📺 Emby"');
+const embyEnd = embyYaml.indexOf('\n  - name: "', embyStart + 1);
+const embyBlock = embyYaml.slice(embyStart, embyEnd < 0 ? undefined : embyEnd);
+const filterLine = (embyBlock.match(/^    filter: '(.+)'$/m) || [])[1];
+assert.ok(filterLine, 'Emby group should carry a filter');
+
+// mihomo 用 RE2 的 (?i) 前缀，JS 里换成 i flag
+const embyRe = new RegExp(filterLine.replace('(?i)', ''), 'i');
+const shouldMatch = [
+  '🛟 🇺🇸 US bb-zen-vl',
+  '🛟 🇺🇸 US-ZEN-GOLD-1 [下载]',
+  '🛟 🇺🇸 US pp-or-tj',
+  '🛟 🇺🇸 US su-rn2-vc',
+];
+const shouldSkip = [
+  '🛟 🇺🇸 US su-aws-vc',
+  '🛟 🇺🇸 US mm-or-vc',
+];
+for (const n of shouldMatch) assert.ok(embyRe.test(n), 'should match: ' + n);
+for (const n of shouldSkip) assert.ok(!embyRe.test(n), 'should skip: ' + n);
+
 console.log('auto-select tests passed');

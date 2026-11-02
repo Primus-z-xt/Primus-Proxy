@@ -29,7 +29,7 @@ try {
   records.set('mihomo:modern', JSON.stringify(modern));
   const response = await get('/mihomo/modern');
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-loon-auto-select');
+  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-static-sub');
   const yaml = await response.text();
   for (const value of ['format=clash', '机场:', '自建:', '备用:', '🌐 全球代理策略', '📺 Emby', 'DOMAIN,plex.example.com,📺 Emby', '"plex.example.com": "192.0.2.10"']) assert.ok(yaml.includes(value), value);
   assert.ok(!yaml.includes('__PROXY_'));
@@ -54,11 +54,11 @@ try {
   records.set('loon:existing', JSON.stringify(loon));
   const loonResponse = await get('/loon/existing/Primus-Loon.lcf');
   assert.equal(loonResponse.status, 200);
-  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-loon-auto-select');
+  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-static-sub');
   const lcf = await loonResponse.text();
   // Loon 逐字快照：仅在 Loon 模板/渲染逻辑真正变化时更新。
-  // 2026-11-02 Loon v30 新增可选 url-test（默认关闭，输出不变），哈希随模板版本头更新。
-  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), 'cd615d87e43dc62b292875735cb39b5c52412e9198bdf71f506f05b15f2c75aa', 'Loon output must remain byte-for-byte unchanged');
+  // 2026-11-02 大流量正则更新会影响 Loon 的「备用·Emby大流量」筛选器，故快照同步更新。
+  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), 'ec0a2c84f7d8418949305f7ea9a753c9c5531a76d66b7a2d301f8a4fd9f02b88', 'Loon output must remain byte-for-byte unchanged');
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));

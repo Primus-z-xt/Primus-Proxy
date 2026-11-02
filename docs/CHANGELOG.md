@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-02 · Mihomo v14
+
+- 更新备用「大流量」节点识别正则：补齐 `su-or-vl/tj`、`pp-or-tj`、`bb-zen-vl` 与 `US-ZEN-GOLD-*`，此前这 9 个节点不会被 Emby 备用线路选中。
+- 以实际订阅（49 个节点，其中大流量组 19 个）验证：组内命中 10/19 → 19/19，组外误伤 0。
+- Builder 与 Worker 同步修改；Mihomo 配置版本 v13 → v14，Loon 不变。
+
+## 2026-11-02 · Worker 静态订阅路由
+
+- 新增 `GET /s/<token>`：从 KV 读取 `sub:<token>` 并原样返回（`text/yaml` + CORS），用于托管只含部分节点的上游订阅。
+- 订阅内容存放在 KV，不进入仓库，避免节点 UUID 出现在公开代码里；token 长度限制 8–64 位，未命中返回 404。
+- `X-Primus-Worker-Revision` 更新为 `2026-11-static-sub`。
+- Mihomo / Loon 的配置输出与版本号不变。
+
 ## 2026-11-02 · Loon v30
 
 - 生成器页面重构：备用节点独立成卡片，Mihomo 与 Loon 两个页签的每个节点组卡片各带一个「自动选择最快节点」勾选框。
