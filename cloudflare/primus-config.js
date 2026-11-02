@@ -217,13 +217,19 @@ function normalizeNewPayload(body) {
   const dailySources = uniqueAllowed(body.daily_sources, SOURCE_ORDER).filter(key => sources[key].enabled);
   const dailyRegions = uniqueAllowed(body.daily_regions, Object.keys(REGIONS));
   const aiSources = uniqueAllowed(body.ai_sources, SOURCE_ORDER).filter(key => sources[key].enabled);
+  const autoSelect = {
+    daily: Boolean(body?.auto_select?.daily),
+    backup: Boolean(body?.auto_select?.backup),
+    ai: Boolean(body?.auto_select?.ai),
+    emby: Boolean(body?.auto_select?.emby)
+  };
 
   if (!dailySources.length) throw new Error("日用节点至少选择一个已启用来源");
   if (!dailyRegions.length) throw new Error("日用节点至少选择一个地区");
   if (!aiSources.length) throw new Error("AI 至少选择一个已启用来源");
 
   const emby = normalizeEmby(body?.emby, enabledKeys);
-  return { version: 3, sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources, emby };
+  return { version: 3, sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources, auto_select: autoSelect, emby };
 }
 
 function normalizeLegacy(record) {
@@ -411,6 +417,19 @@ function mihomoEmbyRegex(codes) {
   return `(?i)^(?=.*(?:${regions}))(?:(?!🛟 ).*|🛟 (?=.*(?:${large})).*)`;
 }
 
+const AUTO_TEST_URL = "https://cp.cloudflare.com/generate_204";
+
+function groupTypeLines(auto) {
+  if (!auto) return [`    type: select`];
+  return [
+    `    type: url-test`,
+    `    url: "${AUTO_TEST_URL}"`,
+    `    interval: 300`,
+    `    tolerance: 50`,
+    `    lazy: false`
+  ];
+}
+
 function buildGroups(config) {
   if (config._legacy) return buildGroupsLegacy(config);
 
@@ -431,7 +450,7 @@ function buildGroups(config) {
   lines.push(
     ``,
     `  - name: "🚀 日用节点"`,
-    `    type: select`,
+    ...groupTypeLines(config.auto_select?.daily),
     `    use:`
   );
   for (const name of dailyProviders) lines.push(`      - "${name}"`);
@@ -441,7 +460,7 @@ function buildGroups(config) {
     lines.push(
       ``,
       `  - name: "🛟 备用节点"`,
-      `    type: select`,
+      ...groupTypeLines(config.auto_select?.backup),
       `    use:`,
       `      - "备用"`
     );
@@ -450,7 +469,7 @@ function buildGroups(config) {
   lines.push(
     ``,
     `  - name: "🤖 AI"`,
-    `    type: select`,
+    ...groupTypeLines(config.auto_select?.ai),
     `    use:`
   );
   for (const name of aiProviders) lines.push(`      - "${name}"`);
@@ -460,7 +479,7 @@ function buildGroups(config) {
     lines.push(
       ``,
       `  - name: "📺 Emby"`,
-      `    type: select`,
+      ...groupTypeLines(config.auto_select?.emby),
       `    use:`
     );
     for (const key of selfFirst(config.emby.sources)) lines.push(`      - "${SOURCE_META[key].label}"`);

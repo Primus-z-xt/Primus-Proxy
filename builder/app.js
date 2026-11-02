@@ -331,6 +331,12 @@
       daily_sources: selectedValues(".daily-source", "source").filter(key => sources[key].enabled),
       daily_regions: selectedValues(".daily-region", "region"),
       ai_sources: selectedValues(".ai-source", "source").filter(key => sources[key].enabled),
+      auto_select: {
+        daily: document.getElementById("auto-daily")?.checked === true,
+        backup: document.getElementById("auto-backup")?.checked === true,
+        ai: document.getElementById("auto-ai")?.checked === true,
+        emby: document.getElementById("auto-emby")?.checked === true
+      },
       emby: {
         enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
@@ -413,6 +419,19 @@
     return `(?i)^(?=.*(?:${regions}))(?:(?!🛟 ).*|🛟 (?=.*(?:${large})).*)`;
   }
 
+  const AUTO_TEST_URL = "https://cp.cloudflare.com/generate_204";
+
+  function groupTypeLines(auto) {
+    if (!auto) return [`    type: select`];
+    return [
+      `    type: url-test`,
+      `    url: "${AUTO_TEST_URL}"`,
+      `    interval: 300`,
+      `    tolerance: 50`,
+      `    lazy: false`
+    ];
+  }
+
   function buildGroups(config) {
     const dailyProviders = selfFirst(config.daily_sources).map(key => SOURCE_META[key].label);
     const aiProviders = selfFirst(config.ai_sources).map(key => SOURCE_META[key].label);
@@ -431,7 +450,7 @@
     lines.push(
       ``,
       `  - name: "🚀 日用节点"`,
-      `    type: select`,
+      ...groupTypeLines(config.auto_select?.daily),
       `    use:`
     );
     for (const name of dailyProviders) lines.push(`      - "${name}"`);
@@ -441,7 +460,7 @@
       lines.push(
         ``,
         `  - name: "🛟 备用节点"`,
-        `    type: select`,
+        ...groupTypeLines(config.auto_select?.backup),
         `    use:`,
         `      - "备用"`
       );
@@ -450,7 +469,7 @@
     lines.push(
       ``,
       `  - name: "🤖 AI"`,
-      `    type: select`,
+      ...groupTypeLines(config.auto_select?.ai),
       `    use:`
     );
     for (const name of aiProviders) lines.push(`      - "${name}"`);
@@ -460,7 +479,7 @@
       lines.push(
         ``,
         `  - name: "📺 Emby"`,
-        `    type: select`,
+        ...groupTypeLines(config.auto_select?.emby),
         `    use:`
       );
       for (const key of selfFirst(config.emby.sources)) lines.push(`      - "${SOURCE_META[key].label}"`);
@@ -498,6 +517,7 @@
       emby_sources: config.emby.sources,
       emby_regions: config.emby.regions
     };
+    safe.auto_select = config.auto_select;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
   }
 
@@ -512,6 +532,10 @@
     if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.emby_sources)) document.querySelectorAll(".emby-source").forEach(el => { el.checked = saved.emby_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.daily_regions)) document.querySelectorAll(".daily-region").forEach(el => { el.checked = saved.daily_regions.includes(el.dataset.region); });
+    for (const key of ["daily", "backup", "ai", "emby"]) {
+      const el = document.getElementById("auto-" + key);
+      if (el && typeof saved.auto_select?.[key] === "boolean") el.checked = saved.auto_select[key];
+    }
   }
 
   function syncSourceUi() {
