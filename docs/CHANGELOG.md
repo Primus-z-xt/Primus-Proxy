@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-02 · Mihomo v13
+
+- 生成器新增“自动选择最快节点”开关，可分别为 日用 / 备用 / AI / Emby 四个节点组开启 `url-test`；未勾选时输出与 v12 完全一致。
+- 健康检查地址使用 `https://cp.cloudflare.com/generate_204`，`interval: 300`、`tolerance: 50`、`lazy: false`。
+- Builder 本地生成与 Worker 远程生成同步支持；请求体新增可选 `auto_select` 字段，旧配置和旧 KV 记录缺少该字段时按 `false` 处理，行为不变。
+- 切板类分组（全球代理策略 / 番茄 / 抖音 / 小红书）保持 `select`，不参与自动测速。
+- 新增 `cloudflare/primus-config.auto-select.test.mjs` 覆盖开启、关闭、部分开启、旧记录兼容与 POST 规范化；Loon 输出未改动。
+
 ## 2026-10-28 · VPS 维护基线与 SOP 精简
 
 - 部署基线更新为 Debian 12、S-UI 1.6.6 / sing-box 1.14.4，补充系统/内核升级、公钥专用 SSH、Cloudflare 源站端口限制、日志容量与无效网卡配置修复。
