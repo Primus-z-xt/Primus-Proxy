@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-02 · Loon v30
+
+- 生成器页面重构：备用节点独立成卡片，Mihomo 与 Loon 两个页签的每个节点组卡片各带一个「自动选择最快节点」勾选框。
+- 修复 v13 引入的重复勾选框（同一 `id` 渲染两次，第二个不可用）。
+- Loon 侧新增可选 `url-test` 支持：主力节点 / 备用节点 / AI / Emby 可分别开启，参数 `url = http://cp.cloudflare.com/generate_204`、`interval = 600`；未勾选时输出与 v29 一致。
+- Worker 新增 `auto_select` 字段解析，`X-Primus-Worker-Revision` 更新为 `2026-11-loon-auto-select`。
+- **Loon 的 url-test 写法未经真机验证**，请在 Loon 内导入后确认策略组正常。
+- Mihomo 生成逻辑不变，配置版本保持 v13。
+
 ## 2026-11-02 · Mihomo v13
 
 - 生成器新增“自动选择最快节点”开关，可分别为 日用 / 备用 / AI / Emby 四个节点组开启 `url-test`；未勾选时输出与 v12 完全一致。

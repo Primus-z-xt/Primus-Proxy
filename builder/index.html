@@ -360,10 +360,14 @@
             <label class="source-title"><input id="enable-backup" type="checkbox" checked>备用</label>
             <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
           </div>
-          <label class="show-row"><input id="auto-backup" type="checkbox">备用组自动选择最快节点（url-test）</label>
-          <label class="show-row"><input id="auto-backup" type="checkbox">备用组自动选择最快节点（url-test）</label>
           <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
           <p class="hint">取消某个来源后，该订阅链接可以留空。选择状态会保存在当前浏览器，但真实订阅 URL 不会写入本地存储。</p>
+        </div>
+
+        <div class="subcard">
+          <h3>🛟 备用节点</h3>
+          <p class="hint">仅在启用「备用」来源时生成该策略组。</p>
+          <label class="show-row"><input id="auto-backup" type="checkbox">自动选择最快节点（url-test）</label>
         </div>
 
         <div class="subcard">
@@ -374,7 +378,6 @@
             <label class="check-item"><input class="daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
-          <label class="show-row"><input id="auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
           <label class="show-row"><input id="auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
@@ -394,7 +397,6 @@
             <label class="check-item"><input class="ai-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
-          <label class="show-row"><input id="auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
           <label class="show-row"><input id="auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
         </div>
 
@@ -417,7 +419,6 @@
             <label class="check-item"><input class="emby-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
-          <label class="show-row"><input id="auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
           <label class="show-row"><input id="auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
@@ -464,6 +465,12 @@
         </div>
 
         <div class="subcard">
+          <h3>🛟 备用节点</h3>
+          <p class="hint">仅在启用「备用」来源时生成该策略组。</p>
+          <label class="show-row"><input id="loon-auto-backup" type="checkbox">自动选择最快节点（url-test）</label>
+        </div>
+
+        <div class="subcard">
           <h3>🚀 日用节点</h3>
           <div class="group-title">来源</div>
           <div class="option-grid source-grid">
@@ -471,6 +478,7 @@
             <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
+          <label class="show-row"><input id="loon-auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="loon-select-all-regions" type="button" class="secondary mini">全选</button>
@@ -489,6 +497,7 @@
             <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
+          <label class="show-row"><input id="loon-auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
         </div>
 
         <div class="subcard">
@@ -510,6 +519,7 @@
             <label class="check-item"><input class="loon-emby-source" data-source="self" type="checkbox" checked>自建</label>
             <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox" checked>备用</label>
           </div>
+          <label class="show-row"><input id="loon-auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="loon-emby-select-all-regions" type="button" class="secondary mini">全选</button>

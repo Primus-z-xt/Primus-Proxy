@@ -610,6 +610,12 @@
       daily_sources: selectedValues(".loon-daily-source", "source").filter(key => enabledSources.includes(key)),
       daily_regions: selectedValues(".loon-daily-region", "region"),
       ai_sources: selectedValues(".loon-ai-source", "source").filter(key => enabledSources.includes(key)),
+      auto_select: {
+        backup: document.getElementById("loon-auto-backup")?.checked === true,
+        daily: document.getElementById("loon-auto-daily")?.checked === true,
+        ai: document.getElementById("loon-auto-ai")?.checked === true,
+        emby: document.getElementById("loon-auto-emby")?.checked === true
+      },
       emby: {
         enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
@@ -664,6 +670,12 @@
     return lines.join("\n");
   }
 
+  const LOON_AUTO_SUFFIX = ",url = http://cp.cloudflare.com/generate_204,interval = 600";
+
+  function loonGroup(auto, members) {
+    return (auto ? "url-test" : "select") + "," + members + (auto ? LOON_AUTO_SUFFIX : "");
+  }
+
   function buildLoonGroups(config) {
     const dailyFilters = [];
     for (const sourceKey of selfFirst(config.daily_sources)) {
@@ -679,20 +691,20 @@
 
     const lines = [
       `全球代理策略 = select,${globalItems.join(",")},img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png`,
-      `主力节点 = select,${dailyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
+      `主力节点 = ${loonGroup(config.auto_select?.daily, dailyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
     ];
 
     if (hasBackup) {
-      lines.push(`备用节点 = select,备用 · 全部,img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+      lines.push(`备用节点 = ${loonGroup(config.auto_select?.backup, "备用 · 全部")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
     }
 
     lines.push(
-      `AI = select,${aiFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
+      `AI = ${loonGroup(config.auto_select?.ai, aiFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
     );
 
     if (config.emby?.enabled) {
       const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用 · Emby大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
-      lines.push(`Emby = select,${embyFilters.join(",")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
+      lines.push(`Emby = ${loonGroup(config.auto_select?.emby, embyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
     }
 
     lines.push(
