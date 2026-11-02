@@ -169,4 +169,21 @@ const loonStored = JSON.parse(records.get('loon:' + loonToken));
 assert.equal(loonStored.auto_select.backup, true);
 assert.equal(loonStored.auto_select.daily, false);
 
+
+// ---------------- 静态订阅路由 /s/<token> ----------------
+const yamlFixture = 'proxies:\n  - name: test\n    type: vless\n';
+records.set('sub:cf7f3a9c2e', yamlFixture);
+
+const subRes = await worker.fetch(new Request('https://example.com/s/cf7f3a9c2e', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
+assert.equal(subRes.status, 200);
+assert.match(subRes.headers.get('Content-Type') || '', /text\/yaml/);
+assert.equal(subRes.headers.get('Access-Control-Allow-Origin'), 'https://primus-z-xt.github.io');
+assert.equal(await subRes.text(), yamlFixture);
+
+const subMissing = await worker.fetch(new Request('https://example.com/s/aaaaaaaa'), env);
+assert.equal(subMissing.status, 404);
+
+const subBadLen = await worker.fetch(new Request('https://example.com/s/short'), env);
+assert.equal(subBadLen.status, 404);
+
 console.log('auto-select tests passed');

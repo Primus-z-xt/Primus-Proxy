@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 · Worker 静态订阅路由
+
+- 新增 `GET /s/<token>`：从 KV 读取 `sub:<token>` 并原样返回（`text/yaml` + CORS），用于托管只含部分节点的上游订阅。
+- 订阅内容存放在 KV，不进入仓库，避免节点 UUID 出现在公开代码里；token 长度限制 8–64 位，未命中返回 404。
+- `X-Primus-Worker-Revision` 更新为 `2026-11-static-sub`。
+- Mihomo / Loon 的配置输出与版本号不变。
+
 ## 2026-11-02 · Loon v30
 
 - 生成器页面重构：备用节点独立成卡片，Mihomo 与 Loon 两个页签的每个节点组卡片各带一个「自动选择最快节点」勾选框。

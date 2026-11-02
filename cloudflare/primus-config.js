@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-11-loon-auto-select";
+const WORKER_REVISION = "2026-11-static-sub";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -811,6 +811,21 @@ async function handleGet(token, env) {
   }
 }
 
+async function handleStaticSub(token, env, origin) {
+  const raw = await env.MIHOMO_KV.get(`sub:${token}`);
+  if (!raw) {
+    return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store", ...corsHeaders(origin) } });
+  }
+  return new Response(raw, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/yaml; charset=utf-8",
+      "Cache-Control": "no-store",
+      ...corsHeaders(origin)
+    }
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -822,6 +837,9 @@ export default {
 
     const mihomoMatch = url.pathname.match(/^\/mihomo\/([A-Za-z0-9_-]+)$/);
     if (request.method === "GET" && mihomoMatch) return handleGet(mihomoMatch[1], env);
+
+    const staticMatch = url.pathname.match(/^\/s\/([A-Za-z0-9_-]{8,64})$/);
+    if (request.method === "GET" && staticMatch) return handleStaticSub(staticMatch[1], env, origin);
 
     const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)(?:\/Primus-Loon\.lcf)?$/);
     if (request.method === "GET" && loonMatch) return handleLoonGet(loonMatch[1], env);
