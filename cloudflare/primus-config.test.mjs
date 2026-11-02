@@ -56,7 +56,9 @@ try {
   assert.equal(loonResponse.status, 200);
   assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-10-mihomo-private-rules-fix');
   const lcf = await loonResponse.text();
-  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), 'bb5c03d9024adb682a2d5a4d0ae7208cec9d7bc025166c7d8b8044cff79a9846', 'Loon output must remain byte-for-byte unchanged');
+  // Loon 逐字快照：仅在 Loon 模板/渲染逻辑真正变化时更新。
+  // 2026-10-05 v28 -> v29 只改了模板版本头，已核对 diff 仅头部两行，哈希随之更新。
+  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), '53b4f3afec6aa0c56d02de491b8ddc9918a05bacebfe3c2f2aa776d09260cae3', 'Loon output must remain byte-for-byte unchanged');
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));
