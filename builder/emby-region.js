@@ -68,7 +68,8 @@
       daily_regions: config.daily_regions,
       ai_sources: config.ai_sources,
       emby_sources: config.emby.sources,
-      emby_regions: config.emby.regions
+      emby_regions: config.emby.regions,
+      auto_select: config.auto_select
     }));
   };
 
@@ -106,7 +107,8 @@
       daily_regions: config.daily_regions,
       ai_sources: config.ai_sources,
       emby_sources: config.emby.sources,
-      emby_regions: config.emby.regions
+      emby_regions: config.emby.regions,
+      auto_select: config.auto_select
     }));
   };
 
