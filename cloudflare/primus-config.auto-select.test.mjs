@@ -172,9 +172,9 @@ assert.equal(loonStored.auto_select.daily, false);
 
 // ---------------- 静态订阅路由 /s/<token> ----------------
 const yamlFixture = 'proxies:\n  - name: test\n    type: vless\n';
-records.set('sub:cf7f3a9c2e', yamlFixture);
+records.set('sub:static-fixture-token-2026', yamlFixture);
 
-const subRes = await worker.fetch(new Request('https://example.com/s/cf7f3a9c2e', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
+const subRes = await worker.fetch(new Request('https://example.com/s/static-fixture-token-2026', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
 assert.equal(subRes.status, 200);
 assert.match(subRes.headers.get('Content-Type') || '', /text\/yaml/);
 assert.equal(subRes.headers.get('Access-Control-Allow-Origin'), 'https://primus-z-xt.github.io');
