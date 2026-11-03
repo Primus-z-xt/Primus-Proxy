@@ -249,9 +249,12 @@ const defaultsConfig = {
 const defaultLoon = await renderLoon(defaultsConfig, 'default-static-snapshot');
 const snapshot = await readFile(new URL('../loon/Primus-Loon.lcf', import.meta.url), 'utf8');
 function section(text, name) {
-  const match = text.match(new RegExp('^\\[' + name + '\\]\\n([\\s\\S]*?)(?=^\\[|$)', 'm'));
-  assert.ok(match, name + ' section missing');
-  return match[1].trim();
+  const marker = '[' + name + ']\n';
+  const pos = text.indexOf(marker);
+  assert.ok(pos >= 0, name + ' section missing');
+  const body = text.slice(pos + marker.length);
+  const next = body.search(/\n\[[^\]]+\]\n/);
+  return (next < 0 ? body : body.slice(0, next)).trim();
 }
 for (const name of ['Remote Filter', 'Proxy Group']) {
   assert.equal(section(snapshot, name), section(defaultLoon, name), 'static snapshot differs from Worker for ' + name);
