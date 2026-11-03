@@ -115,7 +115,7 @@
         input.type = "checkbox";
         input.className = "loon-daily-region";
         input.dataset.region = code;
-        input.checked = code === "SG";
+        input.checked = code === "US";
         appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
@@ -141,7 +141,7 @@
         input.type = "checkbox";
         input.className = "daily-region";
         input.dataset.region = code;
-        input.checked = code === "SG";
+        input.checked = code === "US";
         appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
@@ -740,7 +740,8 @@
         sources: config.emby.sources,
         regions: config.emby.regions,
         plex: config.emby.plex
-      }
+      },
+      auto_select: config.auto_select
     });
   }
 
@@ -751,7 +752,8 @@
       daily_sources: config.daily_sources,
       daily_regions: config.daily_regions,
       ai_sources: config.ai_sources,
-      emby_sources: config.emby.sources
+      emby_sources: config.emby.sources,
+      auto_select: config.auto_select
     };
     localStorage.setItem(LOON_STORAGE_KEY, JSON.stringify(safe));
   }
@@ -766,6 +768,10 @@
     if (Array.isArray(saved.ai_sources)) document.querySelectorAll(".loon-ai-source").forEach(el => { el.checked = saved.ai_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.emby_sources)) document.querySelectorAll(".loon-emby-source").forEach(el => { el.checked = saved.emby_sources.includes(el.dataset.source); });
     if (Array.isArray(saved.emby_regions)) document.querySelectorAll(".loon-emby-region").forEach(el => { el.checked = saved.emby_regions.includes(el.dataset.region); });
+    for (const key of ["daily", "backup", "ai", "emby"]) {
+      const el = document.getElementById("loon-auto-" + key);
+      if (el && typeof saved.auto_select?.[key] === "boolean") el.checked = saved.auto_select[key];
+    }
   }
 
   function invalidateLoonGeneration(message = "") {
@@ -895,6 +901,10 @@
     saveLoonSelections();
     invalidateLoonGeneration("Loon 选择已变更，请重新生成配置");
   }));
+  document.querySelectorAll("#loon-auto-backup,#loon-auto-daily,#loon-auto-ai,#loon-auto-emby").forEach(el => el.addEventListener("change", () => {
+    saveLoonSelections();
+    invalidateLoonGeneration("Loon 自动测速设置已变更，请重新生成配置");
+  }));
   document.getElementById("loon-select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = true; });
     saveLoonSelections();
@@ -932,6 +942,7 @@
   });
   for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].enableId).addEventListener("change", syncSourceUi);
   document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", saveSelections));
+  document.querySelectorAll("#auto-backup,#auto-daily,#auto-ai,#auto-emby").forEach(el => el.addEventListener("change", saveSelections));
   document.getElementById("select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".daily-region").forEach(el => { el.checked = true; }); saveSelections();
   });
