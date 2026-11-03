@@ -941,8 +941,8 @@
     invalidateLoonGeneration("Loon Plex 固定解析已变更，请重新生成配置");
   });
   for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].enableId).addEventListener("change", syncSourceUi);
-  document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", saveSelections));
-  document.querySelectorAll("#auto-backup,#auto-daily,#auto-ai,#auto-emby").forEach(el => el.addEventListener("change", saveSelections));
+  document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", () => window.saveSelections()));
+  document.querySelectorAll("#auto-backup,#auto-daily,#auto-ai,#auto-emby").forEach(el => el.addEventListener("change", () => window.saveSelections()));
   document.getElementById("select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".daily-region").forEach(el => { el.checked = true; }); saveSelections();
   });
