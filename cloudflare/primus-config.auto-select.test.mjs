@@ -172,9 +172,9 @@ assert.equal(loonStored.auto_select.daily, false);
 
 // ---------------- 静态订阅路由 /s/<token> ----------------
 const yamlFixture = 'proxies:\n  - name: test\n    type: vless\n';
-records.set('sub:cf7f3a9c2e', yamlFixture);
+records.set('sub:static-fixture-token-2026', yamlFixture);
 
-const subRes = await worker.fetch(new Request('https://example.com/s/cf7f3a9c2e', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
+const subRes = await worker.fetch(new Request('https://example.com/s/static-fixture-token-2026', { headers: { Origin: 'https://primus-z-xt.github.io' } }), env);
 assert.equal(subRes.status, 200);
 assert.match(subRes.headers.get('Content-Type') || '', /text\/yaml/);
 assert.equal(subRes.headers.get('Access-Control-Allow-Origin'), 'https://primus-z-xt.github.io');
@@ -220,5 +220,47 @@ const shouldSkip = [
 ];
 for (const n of shouldMatch) assert.ok(embyRe.test(n), 'should match: ' + n);
 for (const n of shouldSkip) assert.ok(!embyRe.test(n), 'should skip: ' + n);
+
+// ---------------- Builder 新用户默认设置与静态快照一致性 ----------------
+const builderHtml = await readFile(new URL('../builder/index.html', import.meta.url), 'utf8');
+const appCode = await readFile(new URL('../builder/app.js', import.meta.url), 'utf8');
+const embyBridgeCode = await readFile(new URL('../builder/emby-region.js', import.meta.url), 'utf8');
+const airportDefaults = [...builderHtml.matchAll(/<input[^>]*(?:id="(?:enable-airport|loon-enable-airport)"|data-source="airport")[^>]*>/g)];
+assert.equal(airportDefaults.length, 8, 'all airport options must be present for future compatibility');
+for (const entry of airportDefaults) assert.doesNotMatch(entry[0], /\bchecked\b/, 'airport must be off only by default');
+for (const id of ['auto-backup', 'auto-daily', 'auto-ai', 'auto-emby', 'loon-auto-backup', 'loon-auto-daily', 'loon-auto-ai', 'loon-auto-emby']) {
+  const el = builderHtml.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'));
+  assert.ok(el, 'missing optional auto-select UI: ' + id);
+  assert.doesNotMatch(el[0], /\bchecked\b/, 'auto-select must default off');
+}
+assert.equal((appCode.match(/input\.checked = code === "US";/g) || []).length, 2, 'Mihomo and Loon default daily region must be US');
+assert.equal((embyBridgeCode.match(/auto_select: config\.auto_select/g) || []).length, 2, 'Emby extension must persist auto-select in both clients');
+assert.match(appCode, /auto_select: config\.auto_select\s*\n\s*\}\);/, 'Loon import fingerprint must include auto-select');
+
+const defaultsConfig = {
+  version: 2,
+  enabled_sources: ['self', 'backup'],
+  daily_sources: ['self'],
+  daily_regions: ['US'],
+  ai_sources: ['self', 'backup'],
+  auto_select: { daily: false, backup: false, ai: false, emby: false },
+  emby: { enabled: false, targets: [], sources: [], regions: ['US'] },
+};
+const defaultLoon = await renderLoon(defaultsConfig, 'default-static-snapshot');
+const snapshot = await readFile(new URL('../loon/Primus-Loon.lcf', import.meta.url), 'utf8');
+function section(text, name) {
+  const marker = '[' + name + ']\n';
+  const pos = text.indexOf(marker);
+  assert.ok(pos >= 0, name + ' section missing');
+  const body = text.slice(pos + marker.length);
+  const next = body.search(/\n\[[^\]]+\]\n/);
+  return (next < 0 ? body : body.slice(0, next)).trim();
+}
+for (const name of ['Remote Filter', 'Proxy Group']) {
+  assert.equal(section(snapshot, name), section(defaultLoon, name), 'static snapshot differs from Worker for ' + name);
+}
+assert.match(snapshot, /^# 版本：v30$/m);
+assert.doesNotMatch(section(snapshot, 'Remote Filter'), /机场 ·/);
+assert.doesNotMatch(section(snapshot, 'Proxy Group'), /Emby =/);
 
 console.log('auto-select tests passed');
