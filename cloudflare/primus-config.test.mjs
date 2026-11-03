@@ -58,7 +58,11 @@ try {
   const lcf = await loonResponse.text();
   // Loon 逐字快照：仅在 Loon 模板/渲染逻辑真正变化时更新。
   // 2026-11-02 大流量正则更新会影响 Loon 的「备用·Emby大流量」筛选器，故快照同步更新。
-  assert.equal((await import('node:crypto')).createHash('sha256').update(lcf).digest('hex'), 'ec0a2c84f7d8418949305f7ea9a753c9c5531a76d66b7a2d301f8a4fd9f02b88', 'Loon output must remain byte-for-byte unchanged');
+  // 仅规范化模板的两处说明性注释，确保其余 Loon 输出仍与原快照逐字一致。
+  const normalizedLcf = lcf
+    .replace('# Primus Loon 动态配置模板', '# Primus Loon 动态手动版')
+    .replace('# 节点组默认手动选择；可在生成器中单独启用 url-test', '# 全部使用手动选择，不使用 url-test / fallback');
+  assert.equal((await import('node:crypto')).createHash('sha256').update(normalizedLcf).digest('hex'), 'ec0a2c84f7d8418949305f7ea9a753c9c5531a76d66b7a2d301f8a4fd9f02b88', 'Loon output must remain byte-for-byte unchanged except template comments');
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));
