@@ -1,5 +1,5 @@
 (() => {
-  const EMBY_REGION_DEFAULT = "US";
+  const EMBY_REGION_DEFAULT = "";
 
   function renderEmbyRegionOptions(rootId, className, defaultCode = EMBY_REGION_DEFAULT) {
     const root = document.getElementById(rootId);

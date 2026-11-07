@@ -2,8 +2,8 @@
   const MIHOMO_API = "https://config.primusz.top/api/mihomo";
   const LOON_API = "https://config.primusz.top/api/loon";
   const LOON_IMPORT_BASE = "https://www.nsloon.com/openloon/import?sub=";
-  const STORAGE_KEY = "primus-proxy-builder-v2";
-  const LOON_STORAGE_KEY = "primus-proxy-loon-builder-v1";
+  const STORAGE_KEY = "primus-proxy-builder-v3";
+  const LOON_STORAGE_KEY = "primus-proxy-loon-builder-v2";
   const SOURCE_ORDER = ["airport", "self", "backup"];
   const SOURCE_META = {
     airport: { label: "机场", path: "airport", enableId: "enable-airport", urlId: "airport-url" },
@@ -115,7 +115,7 @@
         input.type = "checkbox";
         input.className = "loon-daily-region";
         input.dataset.region = code;
-        input.checked = code === "US";
+        input.checked = false;
         appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
@@ -141,7 +141,7 @@
         input.type = "checkbox";
         input.className = "daily-region";
         input.dataset.region = code;
-        input.checked = code === "US";
+        input.checked = false;
         appendRegionLabel(label, input, code);
         grid.appendChild(label);
       }
@@ -377,6 +377,16 @@
     return `(?i)(${parts.join("|")})`;
   }
 
+function realityProviderOverrideLines(prefix = "") {
+  return [
+    "    override:",
+    ...(prefix ? [`      additional-prefix: "${prefix}"`] : []),
+    "      override-expr:",
+    `        - '(select(.type == "vless" and .["reality-opts"] != null) | .["reality-opts"]["support-x25519mlkem768"]) = true'`,
+    `        - '(select(.type == "vless" and .["reality-opts"] != null) | .["client-fingerprint"]) = "chrome"'`
+  ];
+}
+
   function buildProviders(config) {
     const lines = [];
     for (const sourceKey of SOURCE_ORDER) {
@@ -389,7 +399,8 @@
         `    path: ${providerCachePath(sourceKey, "all", config.sources[sourceKey].url)}`,
         `    interval: 600`
       );
-      if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`, `    override:`, `      additional-prefix: "🛟 "`);
+      if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+      lines.push(...realityProviderOverrideLines(sourceKey === "backup" ? "🛟 " : ""));
       lines.push("");
     }
     return lines.join("\n").trimEnd();
