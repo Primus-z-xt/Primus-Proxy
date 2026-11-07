@@ -26,11 +26,13 @@ Builder 入口：https://primus-z-xt.github.io/Primus-Proxy/
 | Mihomo | 本地生成 YAML，或提交启用来源/策略到 Worker 生成私有订阅；每个来源仅一个 Provider，地区在策略组过滤 |
 | Loon | 生成策略配置；App 单独添加名为 `机场 / 自建 / 备用` 的节点资源，生成器不接收这些资源 URL |
 
-两端节点组**默认手动选择**；可分别为日用、备用、AI、Emby 启用 `url-test` 自动测速，未勾选时保持 `select`。新打开的 Builder 默认启用自建和备用、关闭机场，日用地区默认美国；已有浏览器保存的来源和策略设置仍按保存值恢复。AI 地区固定美国且来源可选。最终策略、过滤器名称和插件以模板与生成函数为准。
+两端 Builder 的来源、策略来源、地区和自动测速勾选项**初始全部关闭**。用户须主动选择必要来源与地区后生成；空白选择会提示补齐。此次更新更换本地选择存储版本，一次性清除旧版隐式默认值的影响；之后仍恢复用户主动保存的选择，不修改已有 Worker KV 记录。AI 地区固定美国且来源可选。可按组启用 `url-test`，未选保持手动 `select`。
+
+Mihomo v15 在每个 Provider 的 `override.override-expr` 中，仅对存在 `reality-opts` 的 VLESS 节点加入 `support-x25519mlkem768: true` 并选择 `client-fingerprint: chrome`。本地生成与 Worker（含历史 token）同步；其他协议不增加 REALITY 字段，备用名称前缀保留。已用 Mihomo v1.19.32 独立实例验证实际生效；旧客户端不能靠字段补丁获得新的内核握手能力。参考 [Mihomo 覆写](https://wiki.metacubex.one/config/proxy-providers/) 和 [Xray 说明](https://github.com/XTLS/Xray-core/issues/7259)。该兼容修复属于必需配置，不是默认关闭的可选功能。
 
 Mihomo Provider 缓存路径包含上游 URL 短哈希，避免地址变化沿用旧缓存；备用排除订阅信息节点，使用 `🛟 ` 前缀区分来源。不按地区重复创建 Provider，以免同名节点 `ambiguous`。不显示独立备用大流量顶层组，普通备用节点保持完整。
 
-Loon 的配置与资源共同决定最终行为；配置文件不包含节点 URL 是设计选择，不能为“补节点”而把凭据嵌入公开模板。当前插件以 `loon/template.lcf` 为准，不在此重复维护清单。公开 `loon/Primus-Loon.lcf` 为与 Builder 当前新用户默认选项一致的 v30 静态快照；不用私有 Emby/Plex 线路，也不替代动态生成。
+Loon 的配置与资源共同决定最终行为；配置文件不包含节点 URL 是设计选择，不能为“补节点”而把凭据嵌入公开模板。当前插件以 `loon/template.lcf` 为准。公开 `loon/Primus-Loon.lcf` 保留 v30 的自建/备用、美国、手动选择预设；这是可选的独立静态配置，不再等于空白 Builder 的初始选择。空白表单没有可生成的有效静态快照；此次不改变 Loon 输出、模板或版本，不含私有 Emby/Plex 线路。
 
 ## Emby / Plex
 
@@ -76,6 +78,8 @@ Worker 从 main 读取模板与版本文件，成功响应的 `X-Primus-Worker-R
 `pages.yml` 发布 Builder 三个文件及 `VERSION.json`，并将三个配置文件映射为 `/template.yaml`、`/Loon-template.lcf`、`/Primus-Loon.lcf`。Builder 读取版本文件；Worker 代码仍需单独发布。版本更新后的实际部署以运行结果确认。
 
 ## VPS 当前维护记录
+
+2026-11-07：用户改用 Debian 12 / 3x-ui 并要求先部署 REALITY。[本轮操作说明](deployment/Primus-VPS-3XUI-REALITY-SOP.md) 记录当前基线、端口原则和手动入站步骤；下面的 S-UI 历史记录不作为当前安装指令。
 
 2026-10-28：Debian 12，S-UI 1.6.6 / sing-box 1.14.4；node 灰云直连、面板/订阅橙云分离。已完成公钥专用 SSH、系统与内核更新、管理端口 Cloudflare 来源限制、日志限制及无效网卡配置修复。
 

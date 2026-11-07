@@ -221,7 +221,7 @@ const shouldSkip = [
 for (const n of shouldMatch) assert.ok(embyRe.test(n), 'should match: ' + n);
 for (const n of shouldSkip) assert.ok(!embyRe.test(n), 'should skip: ' + n);
 
-// ---------------- Builder 新用户默认设置与静态快照一致性 ----------------
+// ---------------- Builder 空白默认；静态快照为独立手动预设 ----------------
 const builderHtml = await readFile(new URL('../builder/index.html', import.meta.url), 'utf8');
 const appCode = await readFile(new URL('../builder/app.js', import.meta.url), 'utf8');
 const embyBridgeCode = await readFile(new URL('../builder/emby-region.js', import.meta.url), 'utf8');
@@ -233,7 +233,11 @@ for (const id of ['auto-backup', 'auto-daily', 'auto-ai', 'auto-emby', 'loon-aut
   assert.ok(el, 'missing optional auto-select UI: ' + id);
   assert.doesNotMatch(el[0], /\bchecked\b/, 'auto-select must default off');
 }
-assert.equal((appCode.match(/input\.checked = code === "US";/g) || []).length, 2, 'Mihomo and Loon default daily region must be US');
+assert.doesNotMatch(builderHtml, /<input[^>]*\bchecked\b[^>]*>/, 'all initial checkboxes must be off');
+assert.equal((appCode.match(/input\.checked = false;/g) || []).length, 2, 'both daily region defaults must be empty');
+assert.match(embyBridgeCode, /EMBY_REGION_DEFAULT = ""/, 'Emby regions default off');
+assert.match(appCode, /primus-proxy-builder-v3/, 'reset earlier implicit defaults once');
+assert.match(appCode, /primus-proxy-loon-builder-v2/, 'reset earlier Loon implicit defaults once');
 assert.equal((embyBridgeCode.match(/auto_select: config\.auto_select/g) || []).length, 2, 'Emby extension must persist auto-select in both clients');
 assert.match(appCode, /auto_select: config\.auto_select\s*\n\s*\}\);/, 'Loon import fingerprint must include auto-select');
 

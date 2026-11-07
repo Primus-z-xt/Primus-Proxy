@@ -348,16 +348,17 @@
       <div id="mihomo-panel" class="panel">
         <div class="subcard">
           <h3>节点来源</h3>
+          <p class="sub">所有选项初始关闭，请按需选择来源、地区和策略后生成。后续保留您主动保存的选择。</p>
           <div class="source-row">
             <label class="source-title"><input id="enable-airport" type="checkbox">机场</label>
             <input id="airport-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴机场 Clash / Mihomo 订阅链接">
           </div>
           <div class="source-row">
-            <label class="source-title"><input id="enable-self" type="checkbox" checked>自建</label>
+            <label class="source-title"><input id="enable-self" type="checkbox">自建</label>
             <input id="self-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴自建 Clash / Mihomo 订阅链接">
           </div>
           <div class="source-row">
-            <label class="source-title"><input id="enable-backup" type="checkbox" checked>备用</label>
+            <label class="source-title"><input id="enable-backup" type="checkbox">备用</label>
             <input id="backup-url" type="password" autocomplete="off" spellcheck="false" placeholder="粘贴备用 Clash / Mihomo 订阅链接">
           </div>
           <label class="show-row"><input id="show-urls" type="checkbox">显示订阅链接</label>
@@ -375,7 +376,7 @@
           <div class="group-title">来源</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="daily-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="daily-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="daily-source" data-source="self" type="checkbox">自建</label>
             <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
@@ -394,8 +395,8 @@
           <div class="group-title">来源</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="ai-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="ai-source" data-source="self" type="checkbox" checked>自建</label>
-            <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox" checked>备用</label>
+            <label class="check-item"><input class="ai-source" data-source="self" type="checkbox">自建</label>
+            <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
         </div>
@@ -416,8 +417,8 @@
           <div class="group-title">可选来源 · 客户端内手动切换</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="emby-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="emby-source" data-source="self" type="checkbox" checked>自建</label>
-            <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox" checked>备用</label>
+            <label class="check-item"><input class="emby-source" data-source="self" type="checkbox">自建</label>
+            <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>
@@ -459,8 +460,8 @@
           <h3>节点来源</h3>
           <div class="option-grid source-grid">
             <label class="check-item"><input id="loon-enable-airport" class="loon-enabled-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input id="loon-enable-self" class="loon-enabled-source" data-source="self" type="checkbox" checked>自建</label>
-            <label class="check-item"><input id="loon-enable-backup" class="loon-enabled-source" data-source="backup" type="checkbox" checked>备用</label>
+            <label class="check-item"><input id="loon-enable-self" class="loon-enabled-source" data-source="self" type="checkbox">自建</label>
+            <label class="check-item"><input id="loon-enable-backup" class="loon-enabled-source" data-source="backup" type="checkbox">备用</label>
           </div>
         </div>
 
@@ -475,7 +476,7 @@
           <div class="group-title">来源</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-daily-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox" checked>自建</label>
+            <label class="check-item"><input class="loon-daily-source" data-source="self" type="checkbox">自建</label>
             <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
@@ -494,8 +495,8 @@
           <div class="group-title">来源</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-ai-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox" checked>自建</label>
-            <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox" checked>备用</label>
+            <label class="check-item"><input class="loon-ai-source" data-source="self" type="checkbox">自建</label>
+            <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
         </div>
@@ -516,8 +517,8 @@
           <div class="group-title">可选来源 · Loon 内手动切换</div>
           <div class="option-grid source-grid">
             <label class="check-item"><input class="loon-emby-source" data-source="airport" type="checkbox">机场</label>
-            <label class="check-item"><input class="loon-emby-source" data-source="self" type="checkbox" checked>自建</label>
-            <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox" checked>备用</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="self" type="checkbox">自建</label>
+            <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
           <div class="group-title">地区 · 可多选</div>

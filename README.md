@@ -4,24 +4,24 @@
 
 **[打开配置生成器 →](https://primus-z-xt.github.io/Primus-Proxy/)**
 
-节点订阅需自行提供。新用户默认开启「自建 + 备用」、关闭「机场」，日用地区默认美国；这些只是新页面的初始选择，已有浏览器保存的设置不会被强制改写。节点组默认手动选择，可按需分别开启日用、备用、AI、Emby 的 `url-test` 自动测速。
+节点订阅需自行提供。生成器的来源、地区和测速等勾选项初始全部关闭，请按需选择后生成。本次更新会一次性重置旧版保存的默认选择，此后保留您主动保存的设置；已有远程订阅不受影响。节点组默认手动选择，可按需开启 `url-test` 自动测速。
 
 ## Clash / Mihomo 怎么用
 
-1. 在生成器选择 **Mihomo / Clash**，默认使用“自建 / 备用”；如重新使用机场，可手动勾选“机场”并填入订阅。
+1. 在生成器选择 **Mihomo / Clash**，手动启用需要的“机场 / 自建 / 备用”来源并填入订阅。
 2. 选择日用节点的来源与地区；AI 地区固定美国，按需选择来源。
 3. 需要媒体分流时填写 Emby / Plex 设置，不使用时留空。
 4. 点击 **生成订阅链接**，复制到客户端或点击 **一键导入 Clash Verge Rev**。只需要本地文件时，点击 **生成配置** 后下载 YAML。
 
-自建来源使用 S-UI 时，请填写带 `format=clash` 的 Clash 格式订阅。
+请填写 Clash / Mihomo 格式的节点订阅：S-UI 使用 `format=clash`，3x-ui 使用其 Clash 格式入口。生成器自动为 REALITY VLESS 节点加入 X25519MLKEM768 兼容字段并选择 chrome 指纹；客户端内核也须支持。
 
 ## Loon 怎么用
 
-1. 切换到 **Loon**，确认启用的节点来源与地区（默认自建、备用和美国），按需填写媒体设置与可选自动测速。
+1. 切换到 **Loon**，手动选择需要的节点来源与地区，按需填写媒体设置和开启自动测速。
 2. 点击 **生成 Loon 配置**，再点击 **一键导入 Loon 配置**。
 3. 在 Loon App 内单独添加节点订阅资源，名称与启用来源对应，必须使用 **机场 / 自建 / 备用**。
 
-Loon 配置与节点资源分开维护，生成器不接收 Loon 的节点订阅链接。公开的 `loon/Primus-Loon.lcf` 仅是与新用户默认选项一致的无私有线路静态快照；如需 Emby/Plex 或不同策略，请使用 Builder 动态生成。
+Loon 配置与节点资源分开维护，生成器不接收 Loon 的节点订阅链接。公开的 `loon/Primus-Loon.lcf` 保留自建/备用、美国、手动选择的独立预设，不等于空白表单的初始选择；如需不同策略或 Emby/Plex，请使用 Builder 动态生成。
 
 ## Emby / Plex 与后续调整
 
@@ -39,7 +39,8 @@ Loon 配置与节点资源分开维护，生成器不接收 Loon 的节点订阅
 ## 更多资料
 
 - [维护与架构说明](./docs/PRODUCTION_BASELINE.md)
-- [VPS / S-UI 部署、升级与故障排查](./docs/deployment/Primus-VPS-SUI-SOP.md)
+- [Debian 12 / 3x-ui REALITY 部署](./docs/deployment/Primus-VPS-3XUI-REALITY-SOP.md)
+- [历史 VPS / S-UI 部署、升级与故障排查](./docs/deployment/Primus-VPS-SUI-SOP.md)
 - [变更记录](./docs/CHANGELOG.md) · [当前配置版本](./VERSION.json)
 
 > **给 AI / Agent：** 修改前请先阅读 [AGENTS.md](./AGENTS.md)，并检查目标分支中的实际代码与配置。README 主要介绍功能和使用方法，具体行为以代码为准。

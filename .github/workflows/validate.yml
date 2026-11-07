@@ -25,3 +25,5 @@ jobs:
         run: node cloudflare/primus-config.test.mjs
       - name: Auto-select, defaults, and Loon snapshot tests
         run: node cloudflare/primus-config.auto-select.test.mjs
+      - name: REALITY compatibility and empty-choice validation
+        run: node cloudflare/primus-config.reality.test.mjs

@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-11-static-sub";
+const WORKER_REVISION = "2026-11-reality-mlkem";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -284,6 +284,7 @@ function buildProvidersLegacy(config) {
       `    url: "${yamlEscape(config.sources.self.url)}"`,
       `    path: ${providerCachePath("self", "all", config.sources.self.url)}`,
       `    interval: 600`,
+      ...realityProviderOverrideLines(),
       ``
     );
   }
@@ -291,7 +292,7 @@ function buildProvidersLegacy(config) {
   for (const sourceKey of SOURCE_ORDER) {
     if (!config.sources[sourceKey]?.enabled) continue;
     if (sourceKey === "backup") {
-      lines.push(`  备用:`, `    type: http`, `    url: "${yamlEscape(config.sources.backup.url)}"`, `    path: ${providerCachePath("backup", "all", config.sources.backup.url)}`, `    interval: 600`, `    exclude-filter: '${BACKUP_EXCLUDE}'`, ``);
+      lines.push(`  备用:`, `    type: http`, `    url: "${yamlEscape(config.sources.backup.url)}"`, `    path: ${providerCachePath("backup", "all", config.sources.backup.url)}`, `    interval: 600`, `    exclude-filter: '${BACKUP_EXCLUDE}'`, ...realityProviderOverrideLines(), ``);
     }
     for (const regionCode of Object.keys(REGIONS)) {
       if (!needed.has(`${sourceKey}:${regionCode}`)) continue;
@@ -305,6 +306,7 @@ function buildProvidersLegacy(config) {
         `    filter: '${region.regex}'`
       );
       if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+      lines.push(...realityProviderOverrideLines());
       lines.push("");
     }
   }
@@ -373,6 +375,16 @@ function combinedRegionRegex(codes) {
   return `(?i)(${parts.join("|")})`;
 }
 
+function realityProviderOverrideLines(prefix = "") {
+  return [
+    "    override:",
+    ...(prefix ? [`      additional-prefix: "${prefix}"`] : []),
+    "      override-expr:",
+    `        - '(select(.type == "vless" and .["reality-opts"] != null) | .["reality-opts"]["support-x25519mlkem768"]) = true'`,
+    `        - '(select(.type == "vless" and .["reality-opts"] != null) | .["client-fingerprint"]) = "chrome"'`
+  ];
+}
+
 function buildProviders(config) {
   if (config._legacy) return buildProvidersLegacy(config);
 
@@ -387,7 +399,8 @@ function buildProviders(config) {
       `    path: ${providerCachePath(sourceKey, "all", config.sources[sourceKey].url)}`,
       `    interval: 600`
     );
-    if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`, `    override:`, `      additional-prefix: "🛟 "`);
+    if (sourceKey === "backup") lines.push(`    exclude-filter: '${BACKUP_EXCLUDE}'`);
+    lines.push(...realityProviderOverrideLines(sourceKey === "backup" ? "🛟 " : ""));
     lines.push("");
   }
   return lines.join("\n").trimEnd();
