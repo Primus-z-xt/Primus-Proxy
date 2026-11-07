@@ -28,17 +28,17 @@ Builder 入口：https://primus-z-xt.github.io/Primus-Proxy/
 | Mihomo | 本地生成 YAML，或提交启用来源/策略到 Worker 生成私有订阅；每个来源仅一个 Provider，地区在策略组过滤 |
 | Loon | 生成策略配置；App 单独添加名为 `机场 / 自建 / 备用` 的节点资源，生成器不接收这些资源 URL |
 
-两端 Builder 的来源、策略来源、地区和自动测速勾选项**初始全部关闭**。用户须主动选择必要来源与地区后生成；空白选择会提示补齐。此次更新更换本地选择存储版本，一次性清除旧版隐式默认值的影响；之后仍恢复用户主动保存的选择，不修改已有 Worker KV 记录。AI 地区固定美国且来源可选。可按组启用 `url-test`，未选保持手动 `select`。
+两端 Builder 的来源、策略来源、地区和自动测速勾选项**初始全部关闭**。用户须主动选择必要来源与地区后生成；空白选择会提示补齐。此次更新更换本地选择存储版本，一次性清除旧版隐式默认值的影响；之后仍恢复用户主动保存的选择，不修改已有 Worker KV 记录。AI 地区固定美国且来源可选。日用、备用、AI、Emby 可独立启用 `url-test` 或 `fallback`，两项默认关闭且互斥，均关闭保持 `select`。fallback 按原来源/地区筛选后的节点顺序选择首个可用节点，Mihomo 每300秒、Loon 每600秒检查，故障超时5000毫秒。页面保存用户主动选择；缺少 `fallback` 的旧KV默认关闭；API同时启用两种模式时规范化为fallback。改变模式后须重新生成订阅，已保存的订阅不会被改写。
 
-Mihomo v15 在每个 Provider 的 `override.override-expr` 中，仅对存在 `reality-opts` 的 VLESS 节点加入 `support-x25519mlkem768: true` 并选择 `client-fingerprint: chrome`。本地生成与 Worker（含历史 token）同步；其他协议不增加 REALITY 字段，备用名称前缀保留。已用 Mihomo v1.19.32 独立实例验证实际生效；旧客户端不能靠字段补丁获得新的内核握手能力。参考 [Mihomo 覆写](https://wiki.metacubex.one/config/proxy-providers/) 和 [Xray 说明](https://github.com/XTLS/Xray-core/issues/7259)。该兼容修复属于必需配置，不是默认关闭的可选功能。
+Mihomo v15 起在每个 Provider 的 `override.override-expr` 中，仅对存在 `reality-opts` 的 VLESS 节点加入 `support-x25519mlkem768: true` 并选择 `client-fingerprint: chrome`。本地生成与 Worker（含历史 token）同步；其他协议不增加 REALITY 字段，备用名称前缀保留。已用 Mihomo v1.19.32 独立实例验证实际生效；旧客户端不能靠字段补丁获得新的内核握手能力。参考 [Mihomo 覆写](https://wiki.metacubex.one/config/proxy-providers/) 和 [Xray 说明](https://github.com/XTLS/Xray-core/issues/7259)。该兼容修复属于必需配置，不是默认关闭的可选功能。
 
 Mihomo Provider 缓存路径包含上游 URL 短哈希，避免地址变化沿用旧缓存；备用排除订阅信息节点，使用 `🛟 ` 前缀区分来源。不按地区重复创建 Provider，以免同名节点 `ambiguous`。不显示独立备用大流量顶层组，普通备用节点保持完整。
 
-Loon 的配置与资源共同决定最终行为；配置文件不包含节点 URL 是设计选择，不能为“补节点”而把凭据嵌入公开模板。当前插件以 `loon/template.lcf` 为准。公开 `loon/Primus-Loon.lcf` 保留 v30 的自建/备用、美国、手动选择预设；这是可选的独立静态配置，不再等于空白 Builder 的初始选择。空白表单没有可生成的有效静态快照；此次不改变 Loon 输出、模板或版本，不含私有 Emby/Plex 线路。
+Loon 的配置与资源共同决定最终行为；配置文件不包含节点 URL 是设计选择，不能为“补节点”而把凭据嵌入公开模板。当前插件以 `loon/template.lcf` 为准。公开 `loon/Primus-Loon.lcf` 保留自建/备用、美国、手动选择预设；这是可选的独立静态配置，不等于空白 Builder 的初始选择。v31 静态快照与动态模板同步 HTTPS 测速地址，不含私有 Emby/Plex 线路。
 
 ## Emby / Plex
 
-- Emby 有独立来源与地区选择，不复用日用地区；客户端内保持手动切换。
+- Emby 有独立来源与地区选择，不复用日用地区；默认手动切换，可按需开启自动择优或故障切换。
 - Mihomo 的 Emby 直接列节点，没有来源子组；备用同时满足所选地区和大流量筛选。
 - Loon 的 Emby 按启用来源动态建立机场/自建地区过滤器及 `备用 · Emby大流量`；当用户未填写私有 Emby 线路时不生成独立 Emby 组。
 - 可选 Plex 域名与固定源 IP 复用 Emby 策略，不另建策略组。Mihomo 注入 `hosts`，Loon 注入带 `use-in-proxy=true` 的 `[Host]`。
@@ -90,3 +90,7 @@ Worker 从 main 读取模板与版本文件，成功响应的 `X-Primus-Worker-R
 ## 2026-11-03 交接后待独立验收
 
 DSH 的 2026-11-03 交接记录描述了 Cloudflare 橙云反代 VLESS/WS/TLS 作为自建入口、保留未启用的 HY2/Reality 入站，以及国内 TCP 直连受阻的情况。这些是交接记录中的运行状态，**不等于本仓库已独立验证当天的服务器和客户端**。线上是否启用新版 Worker、Loon CF 节点和自动测速是否实际可用，都应分别实测。当前客户端来源按用户实际选择为准，仓库保留机场的兼容实现。
+
+### HTTPS 测速与自动模式
+
+Mihomo/Loon 的自动组及 Loon `proxy-test-url` 均使用 `https://www.gstatic.com/generate_204`。Loon `internet-test-url` 是直连网络连通性检查，保留原地址。自动模式只影响所选卡片内的节点，不把 DIRECT 或其他策略组加入故障队列。Mihomo v16 / Loon v31。语法参考：[Mihomo fallback](https://wiki.metacubex.one/config/proxy-groups/fallback/)、[Loon 策略组](https://nsloon.app/docs/Policy/policygroup/)。

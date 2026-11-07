@@ -69,6 +69,7 @@
       ai_sources: config.ai_sources,
       emby_sources: config.emby.sources,
       emby_regions: config.emby.regions,
+      fallback: config.fallback,
       auto_select: config.auto_select
     }));
   };
@@ -108,6 +109,7 @@
       ai_sources: config.ai_sources,
       emby_sources: config.emby.sources,
       emby_regions: config.emby.regions,
+      fallback: config.fallback,
       auto_select: config.auto_select
     }));
   };

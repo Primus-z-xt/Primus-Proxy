@@ -374,6 +374,8 @@
           <h3>🛟 备用节点</h3>
           <p class="hint">仅在启用「备用」来源时生成该策略组。</p>
           <label class="show-row"><input id="auto-backup" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="fallback-backup" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
         </div>
 
         <div class="subcard">
@@ -385,6 +387,8 @@
             <label class="check-item"><input class="daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="fallback-daily" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="select-all-regions" type="button" class="secondary mini">全选</button>
@@ -404,6 +408,8 @@
             <label class="check-item"><input class="ai-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="fallback-ai" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
         </div>
 
         <div class="subcard">
@@ -426,6 +432,8 @@
             <label class="check-item"><input class="emby-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="fallback-emby" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="emby-select-all-regions" type="button" class="secondary mini">全选</button>
@@ -474,6 +482,8 @@
           <h3>🛟 备用节点</h3>
           <p class="hint">仅在启用「备用」来源时生成该策略组。</p>
           <label class="show-row"><input id="loon-auto-backup" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="loon-fallback-backup" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
         </div>
 
         <div class="subcard">
@@ -485,6 +495,8 @@
             <label class="check-item"><input class="loon-daily-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-daily" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="loon-fallback-daily" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="loon-select-all-regions" type="button" class="secondary mini">全选</button>
@@ -504,6 +516,8 @@
             <label class="check-item"><input class="loon-ai-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-ai" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="loon-fallback-ai" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
         </div>
 
         <div class="subcard">
@@ -526,6 +540,8 @@
             <label class="check-item"><input class="loon-emby-source" data-source="backup" type="checkbox">备用</label>
           </div>
           <label class="show-row"><input id="loon-auto-emby" type="checkbox">自动选择最快节点（url-test）</label>
+          <label class="show-row"><input id="loon-fallback-emby" type="checkbox">故障自动切换（fallback）</label>
+          <p class="hint">两项均默认关闭，开启其中一项会关闭另一项。fallback 按现有节点顺序选择首个可用节点。</p>
           <div class="group-title">地区 · 可多选</div>
           <div class="inline-actions">
             <button id="loon-emby-select-all-regions" type="button" class="secondary mini">全选</button>

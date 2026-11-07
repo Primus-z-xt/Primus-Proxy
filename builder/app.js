@@ -352,6 +352,7 @@
         ai: document.getElementById("auto-ai")?.checked === true,
         emby: document.getElementById("auto-emby")?.checked === true
       },
+      fallback: Object.fromEntries(["daily", "backup", "ai", "emby"].map(key => [key, document.getElementById("fallback-" + key)?.checked === true])),
       emby: {
         enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
@@ -445,15 +446,15 @@ function realityProviderOverrideLines(prefix = "") {
     return `(?i)^(?=.*(?:${regions}))(?:(?!🛟 ).*|🛟 (?=.*(?:${large})).*)`;
   }
 
-  const AUTO_TEST_URL = "https://cp.cloudflare.com/generate_204";
+  const AUTO_TEST_URL = "https://www.gstatic.com/generate_204";
 
-  function groupTypeLines(auto) {
-    if (!auto) return [`    type: select`];
+  function groupTypeLines(auto, fallback = false) {
+    if (!auto && !fallback) return [`    type: select`];
     return [
-      `    type: url-test`,
+      `    type: ${fallback ? "fallback" : "url-test"}`,
       `    url: "${AUTO_TEST_URL}"`,
       `    interval: 300`,
-      `    tolerance: 50`,
+      ...(fallback ? [`    timeout: 5000`] : [`    tolerance: 50`]),
       `    lazy: false`
     ];
   }
@@ -476,7 +477,7 @@ function realityProviderOverrideLines(prefix = "") {
     lines.push(
       ``,
       `  - name: "🚀 日用节点"`,
-      ...groupTypeLines(config.auto_select?.daily),
+      ...groupTypeLines(config.auto_select?.daily, config.fallback?.daily),
       `    use:`
     );
     for (const name of dailyProviders) lines.push(`      - "${name}"`);
@@ -486,7 +487,7 @@ function realityProviderOverrideLines(prefix = "") {
       lines.push(
         ``,
         `  - name: "🛟 备用节点"`,
-        ...groupTypeLines(config.auto_select?.backup),
+        ...groupTypeLines(config.auto_select?.backup, config.fallback?.backup),
         `    use:`,
         `      - "备用"`
       );
@@ -495,7 +496,7 @@ function realityProviderOverrideLines(prefix = "") {
     lines.push(
       ``,
       `  - name: "🤖 AI"`,
-      ...groupTypeLines(config.auto_select?.ai),
+      ...groupTypeLines(config.auto_select?.ai, config.fallback?.ai),
       `    use:`
     );
     for (const name of aiProviders) lines.push(`      - "${name}"`);
@@ -505,7 +506,7 @@ function realityProviderOverrideLines(prefix = "") {
       lines.push(
         ``,
         `  - name: "📺 Emby"`,
-        ...groupTypeLines(config.auto_select?.emby),
+        ...groupTypeLines(config.auto_select?.emby, config.fallback?.emby),
         `    use:`
       );
       for (const key of selfFirst(config.emby.sources)) lines.push(`      - "${SOURCE_META[key].label}"`);
@@ -544,6 +545,7 @@ function realityProviderOverrideLines(prefix = "") {
       emby_regions: config.emby.regions
     };
     safe.auto_select = config.auto_select;
+    safe.fallback = config.fallback;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
   }
 
@@ -561,6 +563,9 @@ function realityProviderOverrideLines(prefix = "") {
     for (const key of ["daily", "backup", "ai", "emby"]) {
       const el = document.getElementById("auto-" + key);
       if (el && typeof saved.auto_select?.[key] === "boolean") el.checked = saved.auto_select[key];
+      const fallback = document.getElementById("fallback-" + key);
+      if (fallback) fallback.checked = saved.fallback?.[key] === true;
+      if (fallback?.checked && el) el.checked = false;
     }
   }
 
@@ -643,6 +648,7 @@ function realityProviderOverrideLines(prefix = "") {
         ai: document.getElementById("loon-auto-ai")?.checked === true,
         emby: document.getElementById("loon-auto-emby")?.checked === true
       },
+      fallback: Object.fromEntries(["daily", "backup", "ai", "emby"].map(key => [key, document.getElementById("loon-fallback-" + key)?.checked === true])),
       emby: {
         enabled: embyParsed.targets.length > 0 || plex.enabled,
         targets: embyParsed.targets,
@@ -697,10 +703,11 @@ function realityProviderOverrideLines(prefix = "") {
     return lines.join("\n");
   }
 
-  const LOON_AUTO_SUFFIX = ",url = http://cp.cloudflare.com/generate_204,interval = 600";
+  const LOON_AUTO_SUFFIX = ",url = https://www.gstatic.com/generate_204,interval = 600";
 
-  function loonGroup(auto, members) {
-    return (auto ? "url-test" : "select") + "," + members + (auto ? LOON_AUTO_SUFFIX : "");
+  function loonGroup(auto, members, fallback = false) {
+    const type = fallback ? "fallback" : auto ? "url-test" : "select";
+    return type + "," + members + ((auto || fallback) ? LOON_AUTO_SUFFIX : "") + (fallback ? ",max-timeout = 5000" : "");
   }
 
   function buildLoonGroups(config) {
@@ -718,20 +725,20 @@ function realityProviderOverrideLines(prefix = "") {
 
     const lines = [
       `全球代理策略 = select,${globalItems.join(",")},img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/Global.png`,
-      `主力节点 = ${loonGroup(config.auto_select?.daily, dailyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
+      `主力节点 = ${loonGroup(config.auto_select?.daily, dailyFilters.join(","), config.fallback?.daily)},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Server.png`
     ];
 
     if (hasBackup) {
-      lines.push(`备用节点 = ${loonGroup(config.auto_select?.backup, "备用 · 全部")},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
+      lines.push(`备用节点 = ${loonGroup(config.auto_select?.backup, "备用 · 全部", config.fallback?.backup)},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png`);
     }
 
     lines.push(
-      `AI = ${loonGroup(config.auto_select?.ai, aiFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
+      `AI = ${loonGroup(config.auto_select?.ai, aiFilters.join(","), config.fallback?.ai)},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/AI.png`
     );
 
     if (config.emby?.enabled) {
       const embyFilters = selfFirst(config.emby.sources).map(sourceKey => sourceKey === "backup" ? "备用 · Emby大流量" : `${SOURCE_META[sourceKey].label} · 全部`);
-      lines.push(`Emby = ${loonGroup(config.auto_select?.emby, embyFilters.join(","))},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
+      lines.push(`Emby = ${loonGroup(config.auto_select?.emby, embyFilters.join(","), config.fallback?.emby)},img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Media.png`);
     }
 
     lines.push(
@@ -769,6 +776,7 @@ function realityProviderOverrideLines(prefix = "") {
         regions: config.emby.regions,
         plex: config.emby.plex
       },
+      fallback: config.fallback,
       auto_select: config.auto_select
     });
   }
@@ -781,6 +789,7 @@ function realityProviderOverrideLines(prefix = "") {
       daily_regions: config.daily_regions,
       ai_sources: config.ai_sources,
       emby_sources: config.emby.sources,
+      fallback: config.fallback,
       auto_select: config.auto_select
     };
     localStorage.setItem(LOON_STORAGE_KEY, JSON.stringify(safe));
@@ -799,6 +808,9 @@ function realityProviderOverrideLines(prefix = "") {
     for (const key of ["daily", "backup", "ai", "emby"]) {
       const el = document.getElementById("loon-auto-" + key);
       if (el && typeof saved.auto_select?.[key] === "boolean") el.checked = saved.auto_select[key];
+      const fallback = document.getElementById("loon-fallback-" + key);
+      if (fallback) fallback.checked = saved.fallback?.[key] === true;
+      if (fallback?.checked && el) el.checked = false;
     }
   }
 
@@ -935,14 +947,33 @@ function realityProviderOverrideLines(prefix = "") {
   document.getElementById("copy-loon").addEventListener("click", () => copyText(loonConfig, "Loon 配置已复制"));
   document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, getProfileName() + ".lcf"));
 
+  function bindGroupModeSwitches(prefix = "") {
+    for (const key of ["daily", "backup", "ai", "emby"]) {
+      for (const mode of ["auto", "fallback"]) {
+        const input = document.getElementById(prefix + mode + "-" + key);
+        input.addEventListener("change", () => {
+          if (input.checked) document.getElementById(prefix + (mode === "auto" ? "fallback" : "auto") + "-" + key).checked = false;
+          if (!prefix) {
+            currentSubscriptionUrl = "";
+            subscriptionUrlInput.value = "";
+            copySubscriptionButton.disabled = true;
+            importClashButton.disabled = true;
+          }
+        });
+      }
+    }
+  }
+  bindGroupModeSwitches();
+  bindGroupModeSwitches("loon-");
+
   document.querySelectorAll(".loon-enabled-source").forEach(el => el.addEventListener("change", () => syncLoonSourceUi(true)));
   document.querySelectorAll(".loon-daily-source,.loon-daily-region,.loon-ai-source,.loon-emby-source").forEach(el => el.addEventListener("change", () => {
     saveLoonSelections();
     invalidateLoonGeneration("Loon 选择已变更，请重新生成配置");
   }));
-  document.querySelectorAll("#loon-auto-backup,#loon-auto-daily,#loon-auto-ai,#loon-auto-emby").forEach(el => el.addEventListener("change", () => {
+  document.querySelectorAll("#loon-auto-backup,#loon-auto-daily,#loon-auto-ai,#loon-auto-emby,#loon-fallback-backup,#loon-fallback-daily,#loon-fallback-ai,#loon-fallback-emby").forEach(el => el.addEventListener("change", () => {
     saveLoonSelections();
-    invalidateLoonGeneration("Loon 自动测速设置已变更，请重新生成配置");
+    invalidateLoonGeneration("Loon 节点选择方式已变更，请重新生成配置");
   }));
   document.getElementById("loon-select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".loon-daily-region").forEach(el => { el.checked = true; });
@@ -981,7 +1012,7 @@ function realityProviderOverrideLines(prefix = "") {
   });
   for (const key of SOURCE_ORDER) document.getElementById(SOURCE_META[key].enableId).addEventListener("change", syncSourceUi);
   document.querySelectorAll(".daily-source,.daily-region,.ai-source,.emby-source").forEach(el => el.addEventListener("change", () => window.saveSelections()));
-  document.querySelectorAll("#auto-backup,#auto-daily,#auto-ai,#auto-emby").forEach(el => el.addEventListener("change", () => window.saveSelections()));
+  document.querySelectorAll("#auto-backup,#auto-daily,#auto-ai,#auto-emby,#fallback-backup,#fallback-daily,#fallback-ai,#fallback-emby").forEach(el => el.addEventListener("change", () => window.saveSelections()));
   document.getElementById("select-all-regions").addEventListener("click", () => {
     document.querySelectorAll(".daily-region").forEach(el => { el.checked = true; }); saveSelections();
   });

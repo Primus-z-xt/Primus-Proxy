@@ -29,3 +29,5 @@ jobs:
         run: node cloudflare/primus-config.reality.test.mjs
       - name: Configuration naming and header safety
         run: node cloudflare/primus-config.name.test.mjs
+      - name: Per-card fallback and HTTPS probes
+        run: node cloudflare/primus-config.fallback.test.mjs

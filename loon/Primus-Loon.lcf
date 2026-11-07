@@ -1,8 +1,8 @@
 # ============================================================
 # Primus Loon 默认配置快照（不包含私有线路）
 # 文件名：Primus-Loon.lcf
-# 版本：v30
-# 更新日期：2026-11-02 20:43:49
+# 版本：v31
+# 更新日期：2026-11-07 21:28:58
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
@@ -30,7 +30,7 @@ interface-mode = auto
 test-timeout = 5
 disconnect-on-policy-change = true
 internet-test-url = http://connectivitycheck.platform.hicloud.com/generate_204
-proxy-test-url = http://www.gstatic.com/generate_204
+proxy-test-url = https://www.gstatic.com/generate_204
 resource-parser = https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-parser.loon.min.js
 geoip-url = https://geodata.kelee.one/Country-Masaiki.mmdb
 ipasn-url = https://geodata.kelee.one/GeoLite2-ASN-P3TERX.mmdb
