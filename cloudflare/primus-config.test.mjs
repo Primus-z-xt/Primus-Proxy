@@ -29,7 +29,7 @@ try {
   records.set('mihomo:modern', JSON.stringify(modern));
   const response = await get('/mihomo/modern');
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-reality-mlkem');
+  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-config-name');
   const yaml = await response.text();
   for (const value of ['format=clash', '机场:', '自建:', '备用:', '🌐 全球代理策略', '📺 Emby', 'DOMAIN,plex.example.com,📺 Emby', '"plex.example.com": "192.0.2.10"']) assert.ok(yaml.includes(value), value);
   assert.ok(!yaml.includes('__PROXY_'));
@@ -54,7 +54,7 @@ try {
   records.set('loon:existing', JSON.stringify(loon));
   const loonResponse = await get('/loon/existing/Primus-Loon.lcf');
   assert.equal(loonResponse.status, 200);
-  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-reality-mlkem');
+  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-config-name');
   const lcf = await loonResponse.text();
   // Loon 逐字快照：仅在 Loon 模板/渲染逻辑真正变化时更新。
   // 2026-11-02 大流量正则更新会影响 Loon 的「备用·Emby大流量」筛选器，故快照同步更新。

@@ -21,6 +21,8 @@ GitHub 提交、Pages 发布、Cloudflare Worker 部署是三个结果。当前�
 
 Builder 入口：https://primus-z-xt.github.io/Primus-Proxy/
 
+两端共用“配置名称”，默认 `Primus`，支持自定义。Builder 保存名称但不保存私密 URL；远程创建请求的 `profile_name` 保存至该订阅的 KV，旧记录无此字段则回退 Primus。下载文件使用 `<名称>.yaml` / `<名称>.lcf`，Worker 返回 UTF-8 `Content-Disposition` 与 Base64 `profile-title`；Loon 新链接也携带编码后的文件名，旧 URL 保持兼容。名称仅影响下载和导入元数据，不修改配置正文或节点名称，配置版本保持不变。
+
 | 客户端 | 生成与节点来源 |
 | --- | --- |
 | Mihomo | 本地生成 YAML，或提交启用来源/策略到 Worker 生成私有订阅；每个来源仅一个 Provider，地区在策略组过滤 |

@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-11-reality-mlkem";
+const WORKER_REVISION = "2026-11-config-name";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -68,6 +68,27 @@ function validUrl(value) {
 
 function yamlEscape(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function normalizeProfileName(value) {
+  const text = (typeof value === "string" ? value : "").normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f-\u009f<>:"/\\|?*]/g, "_")
+    .trim().replace(/\.(?:ya?ml|lcf)$/i, "").replace(/^\.+|[. ]+$/g, "");
+  const name = Array.from(text).filter(c => c.codePointAt(0) < 0xd800 || c.codePointAt(0) > 0xdfff).slice(0, 64).join("").trim();
+  if (!name) return "Primus";
+  return /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) ? "_" + name : name;
+}
+
+function profileDownloadHeaders(config, extension) {
+  const name = normalizeProfileName(config.profile_name);
+  const filename = name + extension;
+  const ascii = filename.replace(/[^\x20-\x7e]/g, "_");
+  const encoded = encodeURIComponent(filename).replace(/['()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+  const utf8 = new TextEncoder().encode(name);
+  return {
+    "Content-Disposition": `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`,
+    "profile-title": "base64:" + btoa(String.fromCharCode(...utf8))
+  };
 }
 
 function applyVersionMetadata(template, manifest, product) {
@@ -229,7 +250,7 @@ function normalizeNewPayload(body) {
   if (!aiSources.length) throw new Error("AI 至少选择一个已启用来源");
 
   const emby = normalizeEmby(body?.emby, enabledKeys);
-  return { version: 3, sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources, auto_select: autoSelect, emby };
+  return { version: 3, profile_name: normalizeProfileName(body?.profile_name), sources, daily_sources: dailySources, daily_regions: dailyRegions, ai_sources: aiSources, auto_select: autoSelect, emby };
 }
 
 function normalizeLegacy(record) {
@@ -244,6 +265,7 @@ function normalizeLegacy(record) {
   const enabled = SOURCE_ORDER.filter(key => sources[key].enabled);
   return {
     version: 2,
+    profile_name: normalizeProfileName(record?.profile_name),
     sources,
     daily_sources: ["self", "airport"].filter(key => sources[key].enabled),
     daily_regions: ["SG"],
@@ -579,6 +601,7 @@ function normalizeLoonPayload(body) {
   const emby = normalizeEmby(body?.emby, enabledSources);
   return {
     version: 2,
+    profile_name: normalizeProfileName(body?.profile_name),
     enabled_sources: enabledSources,
     daily_sources: dailySources,
     daily_regions: dailyRegions,
@@ -704,7 +727,7 @@ async function handleLoonPost(request, env) {
   await env.MIHOMO_KV.put(`loon:${token}`, JSON.stringify(config));
 
   return json({
-    config_url: `https://config.primusz.top/loon/${token}/Primus-Loon.lcf`
+    config_url: `https://config.primusz.top/loon/${token}/${encodeURIComponent(config.profile_name)}.lcf`
   }, 200, origin);
 }
 
@@ -756,7 +779,7 @@ async function handleLoonGet(token, env) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "X-Primus-Worker-Revision": WORKER_REVISION,
-        "Content-Disposition": "attachment; filename=Primus-Loon.lcf",
+        ...profileDownloadHeaders(config, ".lcf"),
         "Cache-Control": "no-store"
       }
     });
@@ -789,7 +812,7 @@ async function handlePost(request, env) {
 
   const token = crypto.randomUUID().replaceAll("-", "");
   await env.MIHOMO_KV.put(`mihomo:${token}`, JSON.stringify(config));
-  return json({ subscription_url: `https://config.primusz.top/mihomo/${token}` }, 200, origin);
+  return json({ subscription_url: `https://config.primusz.top/mihomo/${token}`, profile_name: config.profile_name }, 200, origin);
 }
 
 async function handleGet(token, env) {
@@ -815,7 +838,7 @@ async function handleGet(token, env) {
       headers: {
         "Content-Type": "text/yaml; charset=utf-8",
         "X-Primus-Worker-Revision": WORKER_REVISION,
-        "Content-Disposition": "attachment; filename=Primus",
+        ...profileDownloadHeaders(config, ".yaml"),
         "Cache-Control": "no-store"
       }
     });
@@ -854,7 +877,7 @@ export default {
     const staticMatch = url.pathname.match(/^\/s\/([A-Za-z0-9_-]{8,64})$/);
     if (request.method === "GET" && staticMatch) return handleStaticSub(staticMatch[1], env, origin);
 
-    const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)(?:\/Primus-Loon\.lcf)?$/);
+    const loonMatch = url.pathname.match(/^\/loon\/([A-Za-z0-9_-]+)(?:\/[^/]+\.lcf)?$/);
     if (request.method === "GET" && loonMatch) return handleLoonGet(loonMatch[1], env);
 
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store" } });
