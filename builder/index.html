@@ -340,6 +340,11 @@
     </header>
 
     <section class="card">
+      <div class="subcard">
+        <label for="profile-name">配置名称</label>
+        <input id="profile-name" type="text" value="Primus" maxlength="64" placeholder="Primus" autocomplete="off">
+        <p class="hint">默认为 Primus，可自定义；留空恢复默认。用于下载文件和订阅导入名称。</p>
+      </div>
       <div class="tabs">
         <button class="tab active" data-tab="mihomo">Mihomo / Clash</button>
         <button class="tab" data-tab="loon">Loon</button>
@@ -432,7 +437,7 @@
         <div class="actions">
           <button id="generate" class="primary">生成配置</button>
           <button id="copy" class="secondary">复制 YAML</button>
-          <button id="download" class="secondary">下载 Primus-Mihomo.yaml</button>
+          <button id="download" class="secondary">下载 YAML 配置</button>
         </div>
 
         <div class="subscription-box">
@@ -532,7 +537,7 @@
         <div class="actions">
           <button id="generate-loon" class="primary">生成 Loon 配置</button>
           <button id="copy-loon" class="secondary">复制 Loon</button>
-          <button id="download-loon" class="secondary">下载 Primus-Loon.lcf</button>
+          <button id="download-loon" class="secondary">下载 Loon 配置</button>
         </div>
 
         <div class="subscription-box">

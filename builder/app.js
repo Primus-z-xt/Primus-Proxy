@@ -4,6 +4,20 @@
   const LOON_IMPORT_BASE = "https://www.nsloon.com/openloon/import?sub=";
   const STORAGE_KEY = "primus-proxy-builder-v3";
   const LOON_STORAGE_KEY = "primus-proxy-loon-builder-v2";
+  const PROFILE_NAME_KEY = "primus-proxy-profile-name";
+
+  function normalizeProfileName(value) {
+    const text = (typeof value === "string" ? value : "").normalize("NFC")
+      .replace(/[\u0000-\u001f\u007f-\u009f<>:"/\\|?*]/g, "_")
+      .trim().replace(/\.(?:ya?ml|lcf)$/i, "").replace(/^\.+|[. ]+$/g, "");
+    const name = Array.from(text).filter(c => c.codePointAt(0) < 0xd800 || c.codePointAt(0) > 0xdfff).slice(0, 64).join("").trim();
+    if (!name) return "Primus";
+    return /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) ? "_" + name : name;
+  }
+
+  function getProfileName() {
+    return normalizeProfileName(document.getElementById("profile-name").value);
+  }
   const SOURCE_ORDER = ["airport", "self", "backup"];
   const SOURCE_META = {
     airport: { label: "机场", path: "airport", enableId: "enable-airport", urlId: "airport-url" },
@@ -327,6 +341,7 @@
     const embySources = selectedValues(".emby-source", "source").filter(key => sources[key].enabled);
     return {
       version: 3,
+      profile_name: getProfileName(),
       sources,
       daily_sources: selectedValues(".daily-source", "source").filter(key => sources[key].enabled),
       daily_regions: selectedValues(".daily-region", "region"),
@@ -617,6 +632,7 @@ function realityProviderOverrideLines(prefix = "") {
     );
     return {
       version: 2,
+      profile_name: getProfileName(),
       enabled_sources: enabledSources,
       daily_sources: selectedValues(".loon-daily-source", "source").filter(key => enabledSources.includes(key)),
       daily_regions: selectedValues(".loon-daily-region", "region"),
@@ -742,6 +758,7 @@ function realityProviderOverrideLines(prefix = "") {
 
   function loonFingerprint(config) {
     return JSON.stringify({
+      profile_name: config.profile_name,
       enabled_sources: config.enabled_sources,
       daily_sources: config.daily_sources,
       daily_regions: config.daily_regions,
@@ -883,8 +900,19 @@ function realityProviderOverrideLines(prefix = "") {
   function importClashVerge() {
     if (!currentSubscriptionUrl) { status.textContent = "请先生成订阅链接"; return; }
     status.textContent = "正在唤起 Clash Verge Rev…";
-    window.location.href = `clash://install-config?url=${encodeURIComponent(currentSubscriptionUrl)}`;
+    window.location.href = `clash://install-config?url=${encodeURIComponent(currentSubscriptionUrl)}&name=${encodeURIComponent(getProfileName())}`;
   }
+
+  const profileNameInput = document.getElementById("profile-name");
+  profileNameInput.value = normalizeProfileName(localStorage.getItem(PROFILE_NAME_KEY));
+  profileNameInput.addEventListener("input", () => {
+    localStorage.setItem(PROFILE_NAME_KEY, getProfileName());
+    currentSubscriptionUrl = "";
+    subscriptionUrlInput.value = "";
+    copySubscriptionButton.disabled = true;
+    importClashButton.disabled = true;
+    invalidateLoonGeneration("配置名称已变更，请重新生成订阅或配置");
+  });
 
   renderRegionOptions();
   renderLoonRegionOptions();
@@ -897,7 +925,7 @@ function realityProviderOverrideLines(prefix = "") {
 
   document.getElementById("generate").addEventListener("click", generateMihomo);
   document.getElementById("copy").addEventListener("click", () => copyText(output.value, "YAML 已复制"));
-  document.getElementById("download").addEventListener("click", () => downloadText(output.value, "Primus-Mihomo.yaml"));
+  document.getElementById("download").addEventListener("click", () => downloadText(output.value, getProfileName() + ".yaml"));
   createSubscriptionButton.addEventListener("click", createSubscription);
   copySubscriptionButton.addEventListener("click", () => copyText(currentSubscriptionUrl, "订阅链接已复制"));
   importClashButton.addEventListener("click", importClashVerge);
@@ -905,7 +933,7 @@ function realityProviderOverrideLines(prefix = "") {
   document.getElementById("generate-loon").addEventListener("click", generateLoon);
   importLoonButton.addEventListener("click", importLoon);
   document.getElementById("copy-loon").addEventListener("click", () => copyText(loonConfig, "Loon 配置已复制"));
-  document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, "Primus-Loon.lcf"));
+  document.getElementById("download-loon").addEventListener("click", () => downloadText(loonConfig, getProfileName() + ".lcf"));
 
   document.querySelectorAll(".loon-enabled-source").forEach(el => el.addEventListener("change", () => syncLoonSourceUi(true)));
   document.querySelectorAll(".loon-daily-source,.loon-daily-region,.loon-ai-source,.loon-emby-source").forEach(el => el.addEventListener("change", () => {
