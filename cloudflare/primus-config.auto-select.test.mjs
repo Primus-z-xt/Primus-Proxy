@@ -44,7 +44,7 @@ function groupBlock(yaml, name) {
   return yaml.slice(start, next < 0 ? undefined : next);
 }
 
-const TEST_URL = 'https://cp.cloudflare.com/generate_204';
+const TEST_URL = 'https://www.gstatic.com/generate_204';
 
 // 1) 未设置 auto_select：必须保持原样（全部 select，向后兼容）
 const plain = await render(base, 'plain');
@@ -140,7 +140,7 @@ const loonAuto = await renderLoon({ ...loonBase, auto_select: { daily: true, bac
 for (const name of ['主力节点', '备用节点', 'AI', 'Emby']) {
   const line = loonGroupLine(loonAuto, name);
   assert.ok(line.includes(' = url-test,'), name + ' should be url-test');
-  assert.ok(line.includes('url = http://cp.cloudflare.com/generate_204'), name + ' needs url param');
+  assert.ok(line.includes('url = https://www.gstatic.com/generate_204'), name + ' needs url param');
   assert.ok(line.includes('interval = 600'), name + ' needs interval');
   assert.ok(line.includes('img-url = '), name + ' keeps icon');
 }
@@ -263,7 +263,7 @@ function section(text, name) {
 for (const name of ['Remote Filter', 'Proxy Group']) {
   assert.equal(section(snapshot, name), section(defaultLoon, name), 'static snapshot differs from Worker for ' + name);
 }
-assert.match(snapshot, /^# 版本：v30$/m);
+assert.match(snapshot, /^# 版本：v31$/m);
 assert.doesNotMatch(section(snapshot, 'Remote Filter'), /机场 ·/);
 assert.doesNotMatch(section(snapshot, 'Proxy Group'), /Emby =/);
 

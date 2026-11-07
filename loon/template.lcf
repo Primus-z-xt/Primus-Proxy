@@ -1,12 +1,12 @@
 # ============================================================
 # Primus Loon 动态配置模板
 # 文件名：Primus-Loon.lcf
-# 版本：v30
-# 更新日期：2026-11-02 20:43:49
+# 版本：v31
+# 更新日期：2026-11-07 21:28:58
 #
 # 节点来源：机场 / 自建 / 备用
 # 日用：来源可选 + 地区多选；AI：固定美国 + 来源可选
-# 节点组默认手动选择；可在生成器中单独启用 url-test
+# 节点组默认手动选择；可在生成器中按组启用 url-test 或 fallback
 #
 # 使用顺序：
 # 1. 先导入本配置
@@ -30,7 +30,7 @@ interface-mode = auto
 test-timeout = 5
 disconnect-on-policy-change = true
 internet-test-url = http://connectivitycheck.platform.hicloud.com/generate_204
-proxy-test-url = http://www.gstatic.com/generate_204
+proxy-test-url = https://www.gstatic.com/generate_204
 resource-parser = https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-parser.loon.min.js
 geoip-url = https://geodata.kelee.one/Country-Masaiki.mmdb
 ipasn-url = https://geodata.kelee.one/GeoLite2-ASN-P3TERX.mmdb
