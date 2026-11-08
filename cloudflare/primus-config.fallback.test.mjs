@@ -66,6 +66,7 @@ try {
         if (key === enabled) {
           assert.ok(group.includes('https://www.gstatic.com/generate_204'));
           assert.doesNotMatch(group, /tolerance/);
+          assert.ok(group.includes(kind === 'mihomo' ? 'interval: 60' : 'interval = 60'));
           assert.ok(group.includes(kind === 'mihomo' ? 'timeout: 5000' : 'max-timeout = 5000'));
         }
       }

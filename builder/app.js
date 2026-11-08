@@ -453,7 +453,7 @@ function realityProviderOverrideLines(prefix = "") {
     return [
       `    type: ${fallback ? "fallback" : "url-test"}`,
       `    url: "${AUTO_TEST_URL}"`,
-      `    interval: 300`,
+      `    interval: 60`,
       ...(fallback ? [`    timeout: 5000`] : [`    tolerance: 50`]),
       `    lazy: false`
     ];
@@ -703,7 +703,7 @@ function realityProviderOverrideLines(prefix = "") {
     return lines.join("\n");
   }
 
-  const LOON_AUTO_SUFFIX = ",url = https://www.gstatic.com/generate_204,interval = 600";
+  const LOON_AUTO_SUFFIX = ",url = https://www.gstatic.com/generate_204,interval = 60";
 
   function loonGroup(auto, members, fallback = false) {
     const type = fallback ? "fallback" : auto ? "url-test" : "select";

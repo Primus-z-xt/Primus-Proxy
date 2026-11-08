@@ -3,7 +3,7 @@
 // Mihomo remains backward compatible with legacy KV records created by v1/v2.
 // Deployment marker: verify this header on private config responses after upload.
 // Upstream credentials remain in KV; S-UI Mihomo URLs must request format=clash.
-const WORKER_REVISION = "2026-11-fallback-https";
+const WORKER_REVISION = "2026-11-probe-60s";
 
 const MIHOMO_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/mihomo/template.yaml";
 const LOON_TEMPLATE_URL = "https://raw.githubusercontent.com/Primus-z-xt/Primus-Proxy/main/loon/template.lcf";
@@ -461,7 +461,7 @@ function groupTypeLines(auto, fallback = false) {
   return [
     `    type: ${fallback ? "fallback" : "url-test"}`,
     `    url: "${AUTO_TEST_URL}"`,
-    `    interval: 300`,
+    `    interval: 60`,
     ...(fallback ? [`    timeout: 5000`] : [`    tolerance: 50`]),
     `    lazy: false`
   ];
@@ -652,7 +652,7 @@ function buildLoonFilters(config) {
   return lines.join("\n");
 }
 
-const LOON_AUTO_SUFFIX = ",url = https://www.gstatic.com/generate_204,interval = 600";
+const LOON_AUTO_SUFFIX = ",url = https://www.gstatic.com/generate_204,interval = 60";
 
 function loonGroup(auto, members, fallback = false) {
   const type = fallback ? "fallback" : auto ? "url-test" : "select";
