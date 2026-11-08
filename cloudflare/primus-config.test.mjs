@@ -29,7 +29,7 @@ try {
   records.set('mihomo:modern', JSON.stringify(modern));
   const response = await get('/mihomo/modern');
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-fallback-https');
+  assert.equal(response.headers.get('X-Primus-Worker-Revision'), '2026-11-probe-60s');
   const yaml = await response.text();
   for (const value of ['format=clash', '机场:', '自建:', '备用:', '🌐 全球代理策略', '📺 Emby', 'DOMAIN,plex.example.com,📺 Emby', '"plex.example.com": "192.0.2.10"']) assert.ok(yaml.includes(value), value);
   assert.ok(!yaml.includes('__PROXY_'));
@@ -54,14 +54,14 @@ try {
   records.set('loon:existing', JSON.stringify(loon));
   const loonResponse = await get('/loon/existing/Primus-Loon.lcf');
   assert.equal(loonResponse.status, 200);
-  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-fallback-https');
+  assert.equal(loonResponse.headers.get('X-Primus-Worker-Revision'), '2026-11-probe-60s');
   const lcf = await loonResponse.text();
   // Loon 逐字快照：2026-11-07 已核对旧/新输出差异仅为版本、日期及 HTTPS 测速 URL。
   // 仅规范化模板的两处说明性注释，确保其余 Loon 输出仍与原快照逐字一致。
   const normalizedLcf = lcf
     .replace('# Primus Loon 动态配置模板', '# Primus Loon 动态手动版')
     .replace('# 节点组默认手动选择；可在生成器中按组启用 url-test 或 fallback', '# 全部使用手动选择，不使用 url-test / fallback');
-  assert.equal((await import('node:crypto')).createHash('sha256').update(normalizedLcf).digest('hex'), 'f2215a7595fb476649a0565148e59e5c9994f85da9995386ac9221df60514497', 'Loon output must match the reviewed HTTPS-probe snapshot');
+  assert.equal((await import('node:crypto')).createHash('sha256').update(normalizedLcf).digest('hex'), '71c85a87fb7038c436eab2b59b96733a9382fab47dabb3d098d050f16a960c08', 'Loon output must match the reviewed HTTPS-probe snapshot');
   for (const value of ['自建 · 美国', '机场 · 美国', 'use-in-proxy=true', 'DOMAIN,plex.example.com,Emby', 'resource-parser =', 'Prevent_DNS_Leaks']) assert.ok(lcf.includes(value), value);
   assert.ok(!lcf.includes('example.com/sub/client'), 'Loon keeps private resource URLs separate');
   assert.ok(!lcf.includes('__REMOTE_FILTERS__') && !lcf.includes('__PROXY_GROUPS__'));

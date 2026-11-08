@@ -64,7 +64,7 @@ for (const name of ['🚀 日用节点', '🛟 备用节点', '🤖 AI', '📺 E
   const block = groupBlock(all, name);
   assert.match(block, /^    type: url-test$/m, `${name} should be url-test`);
   assert.ok(block.includes(`    url: "${TEST_URL}"`), `${name} needs health-check url`);
-  assert.match(block, /^    interval: 300$/m);
+  assert.match(block, /^    interval: 60$/m);
   assert.match(block, /^    tolerance: 50$/m);
   assert.match(block, /^    lazy: false$/m);
   // 结构未被破坏
@@ -141,7 +141,7 @@ for (const name of ['主力节点', '备用节点', 'AI', 'Emby']) {
   const line = loonGroupLine(loonAuto, name);
   assert.ok(line.includes(' = url-test,'), name + ' should be url-test');
   assert.ok(line.includes('url = https://www.gstatic.com/generate_204'), name + ' needs url param');
-  assert.ok(line.includes('interval = 600'), name + ' needs interval');
+  assert.ok(line.includes('interval = 60'), name + ' needs interval');
   assert.ok(line.includes('img-url = '), name + ' keeps icon');
 }
 
@@ -263,7 +263,7 @@ function section(text, name) {
 for (const name of ['Remote Filter', 'Proxy Group']) {
   assert.equal(section(snapshot, name), section(defaultLoon, name), 'static snapshot differs from Worker for ' + name);
 }
-assert.match(snapshot, /^# 版本：v31$/m);
+assert.match(snapshot, /^# 版本：v32$/m);
 assert.doesNotMatch(section(snapshot, 'Remote Filter'), /机场 ·/);
 assert.doesNotMatch(section(snapshot, 'Proxy Group'), /Emby =/);
 

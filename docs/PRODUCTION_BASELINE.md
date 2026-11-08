@@ -28,7 +28,7 @@ Builder 入口：https://primus-z-xt.github.io/Primus-Proxy/
 | Mihomo | 本地生成 YAML，或提交启用来源/策略到 Worker 生成私有订阅；每个来源仅一个 Provider，地区在策略组过滤 |
 | Loon | 生成策略配置；App 单独添加名为 `机场 / 自建 / 备用` 的节点资源，生成器不接收这些资源 URL |
 
-两端 Builder 的来源、策略来源、地区和自动测速勾选项**初始全部关闭**。用户须主动选择必要来源与地区后生成；空白选择会提示补齐。此次更新更换本地选择存储版本，一次性清除旧版隐式默认值的影响；之后仍恢复用户主动保存的选择，不修改已有 Worker KV 记录。AI 地区固定美国且来源可选。日用、备用、AI、Emby 可独立启用 `url-test` 或 `fallback`，两项默认关闭且互斥，均关闭保持 `select`。fallback 按原来源/地区筛选后的节点顺序选择首个可用节点，Mihomo 每300秒、Loon 每600秒检查，故障超时5000毫秒。页面保存用户主动选择；缺少 `fallback` 的旧KV默认关闭；API同时启用两种模式时规范化为fallback。改变模式后须重新生成订阅，已保存的订阅不会被改写。
+两端 Builder 的来源、策略来源、地区和自动测速勾选项**初始全部关闭**。用户须主动选择必要来源与地区后生成；空白选择会提示补齐。此次更新更换本地选择存储版本，一次性清除旧版隐式默认值的影响；之后仍恢复用户主动保存的选择，不修改已有 Worker KV 记录。AI 地区固定美国且来源可选。日用、备用、AI、Emby 可独立启用 `url-test` 或 `fallback`，两项默认关闭且互斥，均关闭保持 `select`。fallback 按原来源/地区筛选后的节点顺序选择首个可用节点，Mihomo / Loon 均每60秒检查，故障超时5000毫秒。页面保存用户主动选择；缺少 `fallback` 的旧KV默认关闭；API同时启用两种模式时规范化为fallback。改变模式后须重新生成订阅，已保存的订阅不会被改写。
 
 Mihomo v15 起在每个 Provider 的 `override.override-expr` 中，仅对存在 `reality-opts` 的 VLESS 节点加入 `support-x25519mlkem768: true` 并选择 `client-fingerprint: chrome`。本地生成与 Worker（含历史 token）同步；其他协议不增加 REALITY 字段，备用名称前缀保留。已用 Mihomo v1.19.32 独立实例验证实际生效；旧客户端不能靠字段补丁获得新的内核握手能力。参考 [Mihomo 覆写](https://wiki.metacubex.one/config/proxy-providers/) 和 [Xray 说明](https://github.com/XTLS/Xray-core/issues/7259)。该兼容修复属于必需配置，不是默认关闭的可选功能。
 
@@ -93,4 +93,4 @@ DSH 的 2026-11-03 交接记录描述了 Cloudflare 橙云反代 VLESS/WS/TLS �
 
 ### HTTPS 测速与自动模式
 
-Mihomo/Loon 的自动组及 Loon `proxy-test-url` 均使用 `https://www.gstatic.com/generate_204`。Loon `internet-test-url` 是直连网络连通性检查，保留原地址。自动模式只影响所选卡片内的节点，不把 DIRECT 或其他策略组加入故障队列。Mihomo v16 / Loon v31。语法参考：[Mihomo fallback](https://wiki.metacubex.one/config/proxy-groups/fallback/)、[Loon 策略组](https://nsloon.app/docs/Policy/policygroup/)。
+Mihomo/Loon 的自动组及 Loon `proxy-test-url` 均使用 `https://www.gstatic.com/generate_204`。Loon `internet-test-url` 是直连网络连通性检查，保留原地址。自动模式只影响所选卡片内的节点，不把 DIRECT 或其他策略组加入故障队列。Mihomo v17 / Loon v32。语法参考：[Mihomo fallback](https://wiki.metacubex.one/config/proxy-groups/fallback/)、[Loon 策略组](https://nsloon.app/docs/Policy/policygroup/)。
